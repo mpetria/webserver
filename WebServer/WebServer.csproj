@@ -43,9 +43,16 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Entities\RawRequest.cs" />
+    <Compile Include="Entities\Request.cs" />
+    <Compile Include="Entities\Response.cs" />
+    <Compile Include="Handlers\ApplicationHandler.cs" />
+    <Compile Include="Handlers\StaticAssetsHandler.cs" />
+    <Compile Include="Managers\RawHttpManager.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Server.cs" />
+    <Compile Include="Utils\RequestParser.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
