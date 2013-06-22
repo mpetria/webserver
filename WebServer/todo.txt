@@ -1,0 +1,10 @@
+﻿
+
+
+
+1. GET from file system
+2. POST to file system
+3. Stream based file access
+
+
+4. Keep alive

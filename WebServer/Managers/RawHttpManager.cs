@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using WebServer.Entities;
+using WebServer.Handlers;
 
 namespace WebServer.Managers
 {
@@ -75,28 +76,22 @@ namespace WebServer.Managers
             _currentRequest = new RawRequest();
         }
 
-
-        private const string RESPONSE_NOT_FOUND = "HTTP/1.0 404 Not Found";
-
-        private const string SAMPLE_TEXT_RESPONSE =
-            @"HTTP/1.1 200 OK
-Date: Fri, 31 Dec 1999 23:59:59 GMT
-Content-Type: text/plain
-Content-Length: 11
-
-Hello World";
-
-
         private bool TryToDeliverRequest()
         {
             System.Diagnostics.Debug.WriteLine("Deliver Request");
             System.Diagnostics.Debug.WriteLine(_currentRequest.RequestLine);
 
-            //message has successfully been received
-            ASCIIEncoding encoder = new ASCIIEncoding();
 
-            byte[] responseBytes = encoder.GetBytes(SAMPLE_TEXT_RESPONSE);
-            _pushBytes(responseBytes);
+
+            var handler = new StaticAssetsHandler(@"C:\Work\Playground\TestSite");
+            var request = RawRequest.BuildRequest(_currentRequest);
+            var response = new Response();
+
+            handler.HandleRequest(request, response);
+
+            var rawResponse = RawResponse.BuildRawResponse(response);
+            
+            _pushBytes(rawResponse.ResponseBytes);
 
             InitializeNewRequest();
             return true;

@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
+using WebServer.Utils;
 
 namespace WebServer.Entities
 {
@@ -40,6 +42,17 @@ namespace WebServer.Entities
         {
             Body = bodyBytes;
             BodyAsciiString = _asciiEncoding.GetString(Body);
+        }
+
+        public static Request BuildRequest(RawRequest rawRequest)
+        {
+            string method;
+            string uri;
+            string authority;
+
+            RequestParser.ParseRequestLine(rawRequest.RequestLine, out method, out uri, out authority);
+
+            return new Request() {Method = method, Host = "", Uri = uri};
         }
     }
 }
