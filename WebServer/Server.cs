@@ -50,7 +50,7 @@ namespace WebServer
 
             byte[] buffer = new byte[4096];
 
-            RawHttpManager rawHttpManager = new RawHttpManager(responseBytes => WriteBytesToClient(clientStream, responseBytes));
+            RawHttpManager rawHttpManager = new RawHttpManager(responseBytes => SendBytesToClient(clientStream, responseBytes));
 
 
             while (true)
@@ -84,12 +84,10 @@ namespace WebServer
             }
         }
 
-        void WriteBytesToClient(NetworkStream clientStream, byte[] responseBytes)
+        void SendBytesToClient(NetworkStream clientStream, byte[] responseBytes)
         {
-
             clientStream.Write(responseBytes, 0, responseBytes.Length);
             clientStream.Flush();
-            
         }
     }
 }

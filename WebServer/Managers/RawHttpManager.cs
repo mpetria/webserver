@@ -12,7 +12,8 @@ namespace WebServer.Managers
         ExpectRequestLine,
         ExpectRequestHeader,
         ExpectRequestBody,
-        RequestReceived
+        RequestReceived,
+        RequestDelivered
     }
 
     public class SpecialBytes
@@ -25,15 +26,15 @@ namespace WebServer.Managers
 
     public class RawHttpManager
     {
-        private readonly Action<byte[]> _pushBytes;
+        private readonly Action<byte[]> SendBytesToClient;
         private byte[] _unprocessedBytes;
 
         private HttpParserState _httpParserState;
         private RawRequest _currentRequest;
 
-        public  RawHttpManager(Action<byte[]> pushBytes)
+        public  RawHttpManager(Action<byte[]> sendBytesToClient)
         {
-            _pushBytes = pushBytes;
+            SendBytesToClient = sendBytesToClient;
             _unprocessedBytes = new byte[0];
             
             InitializeNewRequest();
@@ -47,22 +48,38 @@ namespace WebServer.Managers
         {
             _unprocessedBytes = _unprocessedBytes.Concat(receivedBytes).ToArray();
 
+            try
+            {
+                ParseAndExecuteRequest();
+            }
+            catch(Exception ex)
+            {
+                var internalServerError = RawResponse.BuildRawResponse(ResponseStatusCode.INTERNAL_SERVER_ERROR);
+                SendBytesToClient(internalServerError.ResponseBytes);
+            }
+        }
+
+        private void ParseAndExecuteRequest()
+        {
             bool continueReading = true;
-            while(continueReading)
+            while (continueReading)
             {
                 switch (_httpParserState)
                 {
                     case HttpParserState.ExpectRequestLine:
-                        continueReading = TryReadRequestLine();
+                        continueReading = ReadRequestLine();
                         break;
                     case HttpParserState.ExpectRequestHeader:
-                        continueReading = TryReadRequestHeader();
+                        continueReading = ReadRequestHeader();
                         break;
                     case HttpParserState.ExpectRequestBody:
-                        continueReading = TryReadRequestBody();
+                        continueReading = ReadRequestBody();
                         break;
                     case HttpParserState.RequestReceived:
-                        continueReading = TryToDeliverRequest();
+                        continueReading = DeliverRequestToHandler();
+                        break;
+                    case HttpParserState.RequestDelivered:
+                        continueReading = InitializeNewRequest();
                         break;
                     default:
                         throw new ArgumentOutOfRangeException();
@@ -70,19 +87,15 @@ namespace WebServer.Managers
             }
         }
 
-        private void InitializeNewRequest()
+        private bool InitializeNewRequest()
         {
-            _httpParserState = HttpParserState.ExpectRequestLine;
             _currentRequest = new RawRequest();
+            _httpParserState = HttpParserState.ExpectRequestLine;
+            return true;
         }
 
-        private bool TryToDeliverRequest()
+        private bool DeliverRequestToHandler()
         {
-            System.Diagnostics.Debug.WriteLine("Deliver Request");
-            System.Diagnostics.Debug.WriteLine(_currentRequest.RequestLine);
-
-
-
             var handler = new StaticAssetsHandler(@"C:\Work\Playground\TestSite");
             var request = RawRequest.BuildRequest(_currentRequest);
             var response = new Response();
@@ -91,17 +104,16 @@ namespace WebServer.Managers
 
             var rawResponse = RawResponse.BuildRawResponse(response);
             
-            _pushBytes(rawResponse.ResponseBytes);
-
-            InitializeNewRequest();
+            SendBytesToClient(rawResponse.ResponseBytes);
+            _httpParserState = HttpParserState.RequestDelivered;
             return true;
 
         }
 
-        private bool TryReadRequestLine()
+        private bool ReadRequestLine()
         {
             byte[] lineBytes;
-            if (!TryReadLine(out lineBytes)) return false;
+            if (!ReadLine(out lineBytes)) return false;
 
             _currentRequest.AddRequestLine(lineBytes);
 
@@ -109,10 +121,10 @@ namespace WebServer.Managers
             return true;
         }
 
-        private bool TryReadRequestHeader()
+        private bool ReadRequestHeader()
         {
             byte[] lineBytes;
-            if (!TryReadLine(out lineBytes)) return false;
+            if (!ReadLine(out lineBytes)) return false;
 
             _currentRequest.AddHeaderLine(lineBytes);
 
@@ -124,17 +136,17 @@ namespace WebServer.Managers
             return true;
         }
 
-        private bool TryReadRequestBody()
+        private bool ReadRequestBody()
         {
             byte[] lineBytes;
-            if (!TryReadBytes(_currentRequest.ContentLength, out lineBytes)) return false;
+            if (!ReadBytes(_currentRequest.ContentLength, out lineBytes)) return false;
 
             _currentRequest.AddBody(lineBytes);
             _httpParserState = HttpParserState.RequestReceived;
             return true;
         }
 
-        private bool TryReadLine(out byte[] lineBytes)
+        private bool ReadLine(out byte[] lineBytes)
         {
             lineBytes = null;
 
@@ -149,7 +161,7 @@ namespace WebServer.Managers
             return true;
         }
 
-        private bool TryReadBytes(int numberOfBytes, out byte[] lineBytes)
+        private bool ReadBytes(int numberOfBytes, out byte[] lineBytes)
         {
             lineBytes = null;
 

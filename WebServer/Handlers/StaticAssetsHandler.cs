@@ -33,6 +33,7 @@ Hello World";
             var filePath = Path.Combine(_directory, request.Uri.Trim("/".ToCharArray()));
             var text = File.ReadAllText(filePath);
 
+            response.StatusCode = ResponseStatusCode.OK;
             response.ContentType = @"text/plain";
             response.Body = text;
         }

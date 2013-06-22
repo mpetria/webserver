@@ -3,6 +3,7 @@
 
 
 1. GET from file system
+** add support for MIME 
 2. POST to file system
 3. Stream based file access
 
