@@ -55,6 +55,7 @@ namespace WebServer.Managers
             catch(Exception ex)
             {
                 var internalServerError = RawResponse.BuildRawResponse(ResponseStatusCode.INTERNAL_SERVER_ERROR);
+                InitializeNewRequest();
                 SendBytesToClient(internalServerError.ResponseBytes);
             }
         }

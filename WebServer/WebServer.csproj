@@ -44,10 +44,12 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Config\ServerConfig.cs" />
     <Compile Include="Entities\RawRequest.cs" />
     <Compile Include="Entities\RawResponse.cs" />
     <Compile Include="Entities\Request.cs" />
     <Compile Include="Entities\Response.cs" />
+    <Compile Include="Entities\ResponseStatusCode.cs" />
     <Compile Include="Handlers\ApplicationHandler.cs" />
     <Compile Include="Handlers\StaticAssetsHandler.cs" />
     <Compile Include="Managers\RawHttpManager.cs" />
@@ -57,6 +59,8 @@
     <Compile Include="Utils\RequestParser.cs" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="readme" />
+    <None Include="Config\mime.types" />
     <Content Include="todo.txt" />
   </ItemGroup>
   <ItemGroup>

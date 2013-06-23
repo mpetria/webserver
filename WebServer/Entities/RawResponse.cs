@@ -34,16 +34,16 @@ namespace WebServer.Entities
             ResponseString += String.Format("{0}: {1}\n", key, value);
         }
 
-        public void AddASCIIBody(string body)
+        public void AddContentLengthAndBeginBody(int length)
         {
-            AddHeader("Content-Length", body.Length.ToString());
+            AddHeader("Content-Length", length.ToString());
             AddEmptyLine();
-            ResponseString += String.Format("{0}", body);
         }
 
-        private void CalculateBytes()
+        private void CalculateBytes(byte[] additionalBytes)
         {
-            ResponseBytes = _asciiEncoding.GetBytes(ResponseString);
+            additionalBytes = additionalBytes ?? new byte[0];
+            ResponseBytes = _asciiEncoding.GetBytes(ResponseString).Concat(additionalBytes).ToArray();
         }
 
         public static RawResponse BuildRawResponse(Response response)
@@ -59,11 +59,23 @@ namespace WebServer.Entities
             if (!String.IsNullOrEmpty(response.ContentType))
                 raw.AddHeader("Content-Type", response.ContentType);
 
-            if(response.Body != null)
-                raw.AddASCIIBody(response.Body);
-            
 
-            raw.CalculateBytes();
+            byte[] bodyBytes = null;
+            if (response.Body != null)
+            {
+                bodyBytes = new ASCIIEncoding().GetBytes(response.Body);
+            }
+            else if (response.BodyBytes != null)
+            {
+                bodyBytes = response.BodyBytes;
+            }
+
+            if (bodyBytes != null)
+            {
+                raw.AddContentLengthAndBeginBody(bodyBytes.Length);
+            }
+
+            raw.CalculateBytes(bodyBytes);
             return raw;
         }
 

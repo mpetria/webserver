@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using WebServer.Config;
 using WebServer.Entities;
 
 namespace WebServer.Handlers
@@ -31,11 +32,15 @@ Hello World";
             System.Diagnostics.Debug.WriteLine("Method {0} Host {1} Uri {2}", request.Method, request.Host, request.Uri);
 
             var filePath = Path.Combine(_directory, request.Uri.Trim("/".ToCharArray()));
-            var text = File.ReadAllText(filePath);
+            var fileContent = File.ReadAllBytes(filePath);
+
+            var extension = Path.GetExtension(filePath);
+
+
 
             response.StatusCode = ResponseStatusCode.OK;
-            response.ContentType = @"text/plain";
-            response.Body = text;
+            response.ContentType = new ServerConfig().GetMimeTypeForExtension(extension);
+            response.BodyBytes = fileContent;
         }
     }
 }

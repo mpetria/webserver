@@ -8,4 +8,13 @@
 3. Stream based file access
 
 
+
 4. Keep alive
+4. Execute handlers on threads (should allow multiple pipelining)
+
+
+For response messages, whether or not a message-body is included with a message is dependent on both the request
+method and the response status code (section 6.1.1). All responses to the HEAD request method MUST NOT
+include a message-body, even though the presence of entity-header fields might lead one to believe they do. All 1xx
+(informational), 204 (no content), and 304 (not modified) responses MUST NOT include a message-body. All other
+responses do include a message-body, although it MAY be of zero length
