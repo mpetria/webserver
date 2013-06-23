@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using WebServer.Config;
 using WebServer.Entities;
 using WebServer.Handlers;
 
@@ -97,7 +98,7 @@ namespace WebServer.Managers
 
         private bool DeliverRequestToHandler()
         {
-            var handler = new StaticAssetsHandler(@"C:\Work\Playground\TestSite");
+            var handler = new StaticAssetsHandler(ServerConfig.Instance.RootDirectory);
             var request = RawRequest.BuildRequest(_currentRequest);
             var response = new Response();
 

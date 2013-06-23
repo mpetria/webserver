@@ -31,5 +31,10 @@ namespace WebServer.Config
             
             return ExtensionsToMimeTypes[extension];
         }
+
+        public string RootDirectory = @"C:\Work\SiteRoot";
+
+        public static ServerConfig Instance = new ServerConfig();
     }
+
 }
