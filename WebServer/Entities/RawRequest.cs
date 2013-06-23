@@ -52,7 +52,18 @@ namespace WebServer.Entities
 
             RequestParser.ParseRequestLine(rawRequest.RequestLine, out method, out uri, out authority);
 
-            return new Request() {Method = method, Host = "", Uri = uri};
+            
+
+            var request = new Request() {Method = method, Host = "", Uri = uri};
+
+
+            foreach (var headerLine in rawRequest.HeaderLines)
+            {
+                string key, value;
+                RequestParser.ParseHeaderLine(headerLine, out key, out value);
+                request.Headers.Add(key.ToLower(), value);
+            }
+            return request;
         }
     }
 }

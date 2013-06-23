@@ -20,6 +20,7 @@ namespace WebServer.Entities
 
         public ResponseStatusCode StatusCode { get; set; }
         public string StatusDescription { get; set; }
+        public DateTime? LastModified { get; set; }
 
 
         public Dictionary<string, string> Headers { get; set; }

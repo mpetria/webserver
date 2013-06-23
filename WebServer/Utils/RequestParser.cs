@@ -10,6 +10,8 @@ namespace WebServer.Utils
     {
 
         static Regex _requestLineRegex = new Regex(@"(?<method>[^\s]+)\s+(?<uri>[^\s]+)\s+(?<authority>[^\s]+)");
+        static Regex _headerLineRegex = new Regex(@"(?<key>[^:]+):(?<value>[^:]+)");
+
         public static bool ParseRequestLine(string requestLine, out string method, out string uri, out string authority)
         {
             var match = _requestLineRegex.Match(requestLine);
@@ -20,6 +22,20 @@ namespace WebServer.Utils
             method = match.Groups["method"].Value;
             uri = match.Groups["uri"].Value;
             authority = match.Groups["authority"].Value;
+
+            return true;
+
+        }
+
+        public static bool ParseHeaderLine(string headerLine, out string key, out string value)
+        {
+            var match = _headerLineRegex.Match(headerLine);
+
+            key = value = null;
+            if (!match.Success) return false;
+
+            key = match.Groups["key"].Value;
+            value = match.Groups["value"].Value;
 
             return true;
 

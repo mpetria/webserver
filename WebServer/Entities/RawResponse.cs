@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using WebServer.Utils;
 
 namespace WebServer.Entities
 {
@@ -18,11 +19,12 @@ namespace WebServer.Entities
             ResponseString = String.Format("HTTP/1.1 {0} {1}\n", (int) statusCode, statusDescription);
         }
 
-        public void AddDateHeader()
+        public void AddDateHeader(string key, DateTime dateTime)
         {
-            //RFC 1123 Date
-            AddHeader("Date", DateTime.UtcNow.ToString("r"));
+            var dateString = DateUtils.GetFormatedServerDate(dateTime);
+            AddHeader(key, dateString);
         }
+      
 
         public void AddEmptyLine()
         {
@@ -50,7 +52,9 @@ namespace WebServer.Entities
         {
             var raw = new RawResponse();
             raw.AddStatusCode(response.StatusCode);
-            raw.AddDateHeader();
+            
+            
+            raw.AddDateHeader("Date", DateTime.Now);
             foreach (var pair in response.Headers)
             {
                 raw.AddHeader(pair.Key, pair.Value);
@@ -58,6 +62,12 @@ namespace WebServer.Entities
 
             if (!String.IsNullOrEmpty(response.ContentType))
                 raw.AddHeader("Content-Type", response.ContentType);
+
+            if (response.LastModified != null)
+            {
+                //raw.AddHeader("Cache-Control", "public");
+                raw.AddDateHeader("Last-Modified", response.LastModified.Value);
+            }
 
 
             byte[] bodyBytes = null;

@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text;
 using WebServer.Config;
 using WebServer.Entities;
+using WebServer.Utils;
 
 namespace WebServer.Handlers
 {
@@ -31,15 +32,22 @@ Hello World";
         {
             System.Diagnostics.Debug.WriteLine("Method {0} Host {1} Uri {2}", request.Method, request.Host, request.Uri);
 
+            var headerIfModifiedSince = request.GetHeaderValue("If-Modified-Since");
             var filePath = Path.Combine(_directory, request.Uri.Trim("/".ToCharArray()));
+            DateTime lastModifiedDate = File.GetLastWriteTime(filePath);
+            if (headerIfModifiedSince != null && DateUtils.CheckIfDatesMatch(lastModifiedDate, headerIfModifiedSince))
+            {
+                response.StatusCode = ResponseStatusCode.NotModified;
+                response.LastModified = lastModifiedDate;
+            }
+            
+            
             var fileContent = File.ReadAllBytes(filePath);
-
+            response.LastModified = lastModifiedDate;
             var extension = Path.GetExtension(filePath);
-
-
-
-            response.StatusCode = ResponseStatusCode.OK;
             response.ContentType = new ServerConfig().GetMimeTypeForExtension(extension);
+
+            response.StatusCode = ResponseStatusCode.Ok;
             response.BodyBytes = fileContent;
         }
     }

@@ -10,6 +10,7 @@ namespace WebServer.Config
         public Dictionary<string, string> ExtensionsToMimeTypes = new Dictionary<string, string>()
         {
             { "html", "text/html" },
+            { "htm", "text/html" },
             { "jpg", "image/jpeg"},	
             { "jpeg", "image/jpeg"},	
 			{ "png", "image/png"},

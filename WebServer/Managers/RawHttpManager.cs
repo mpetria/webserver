@@ -55,7 +55,7 @@ namespace WebServer.Managers
             }
             catch(Exception ex)
             {
-                var internalServerError = RawResponse.BuildRawResponse(ResponseStatusCode.INTERNAL_SERVER_ERROR);
+                var internalServerError = RawResponse.BuildRawResponse(ResponseStatusCode.InternalServerError);
                 InitializeNewRequest();
                 SendBytesToClient(internalServerError.ResponseBytes);
             }
@@ -128,9 +128,13 @@ namespace WebServer.Managers
             byte[] lineBytes;
             if (!ReadLine(out lineBytes)) return false;
 
-            _currentRequest.AddHeaderLine(lineBytes);
+            
 
-            if (lineBytes.Length == 0)
+            if (lineBytes.Length > 0)
+            {
+                _currentRequest.AddHeaderLine(lineBytes);
+            }
+            else
             {
                 _httpParserState = HttpParserState.ExpectRequestBody;
             }
