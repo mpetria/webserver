@@ -13,7 +13,7 @@ namespace WebServer.Managers
         private readonly string _connectionId;
         private readonly ILogger _logger;
         private readonly NetworkStream _clientStream;
-        private readonly RawHttpManager _rawHttpManager;
+        private readonly RawRequestManager _rawRequestManager;
 
         public ConnectionManager(TcpClient tcpClient)
         {
@@ -21,13 +21,13 @@ namespace WebServer.Managers
             _connectionId = Guid.NewGuid().ToString();
             _logger = new ConnectionLogger(_connectionId);
             _clientStream = _tcpClient.GetStream(); 
-            _rawHttpManager = new RawHttpManager(responseBytes => SendBytesToClient(_clientStream, responseBytes));
+            _rawRequestManager = new RawRequestManager(responseBytes => SendBytesToClient(_clientStream, responseBytes));
 
         }
 
         public void ProcessBytes()
         {
-            
+            _logger.Log("Connection Opened");
 
             byte[] buffer = new byte[4096];
 
@@ -57,12 +57,12 @@ namespace WebServer.Managers
                 //message has successfully been received
                 _logger.Log("Bytes Received", message);
 
-                _rawHttpManager.ProcessBytes(message);
+                _rawRequestManager.ProcessBytes(message);
 
                 _logger.Log("Bytes Processed");
-                
-                
             }
+
+            _logger.Log("Connection Closed");
         }
 
         void SendBytesToClient(NetworkStream clientStream, byte[] responseBytes)

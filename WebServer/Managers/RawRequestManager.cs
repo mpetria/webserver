@@ -25,7 +25,7 @@ namespace WebServer.Managers
         public const byte HT = 9;
     }
 
-    public class RawHttpManager
+    public class RawRequestManager
     {
         private readonly Action<byte[]> SendBytesToClient;
         private byte[] _unprocessedBytes;
@@ -33,7 +33,7 @@ namespace WebServer.Managers
         private HttpParserState _httpParserState;
         private RawRequest _currentRequest;
 
-        public  RawHttpManager(Action<byte[]> sendBytesToClient)
+        public  RawRequestManager(Action<byte[]> sendBytesToClient)
         {
             SendBytesToClient = sendBytesToClient;
             _unprocessedBytes = new byte[0];
@@ -41,8 +41,6 @@ namespace WebServer.Managers
             InitializeNewRequest();
             
         }
-
-
 
 
         public void ProcessBytes(byte[] receivedBytes)
@@ -98,14 +96,10 @@ namespace WebServer.Managers
 
         private bool DeliverRequestToHandler()
         {
-            var handler = new StaticAssetsHandler(ServerConfig.Instance.RootDirectory);
-            var request = RawRequest.BuildRequest(_currentRequest);
-            var response = new Response();
 
-            handler.HandleRequest(request, response);
+            var requestManager = new RequestManager();
+            var rawResponse = requestManager.ProceesRequest(_currentRequest);
 
-            var rawResponse = RawResponse.BuildRawResponse(response);
-            
             SendBytesToClient(rawResponse.ResponseBytes);
             _httpParserState = HttpParserState.RequestDelivered;
             return true;
