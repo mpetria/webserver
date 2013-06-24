@@ -61,7 +61,7 @@ namespace WebServer.Entities
             {
                 string key, value;
                 RequestParser.ParseHeaderLine(headerLine, out key, out value);
-                request.Headers.Add(key.ToLower(), value);
+                request.AddHeader(key, value);
             }
             return request;
         }

@@ -17,7 +17,5 @@ namespace WebServer.Utils
         {
             return GetFormatedServerDate(dateTime) == headerDate;
         }
-
-      
     }
 }

@@ -41,53 +41,14 @@ namespace WebServer
                 clientThread.Start(client);
             }
         }
-      
+
 
         private void HandleClientCommunication(object tcpClientObject)
         {
             TcpClient tcpClient = tcpClientObject as TcpClient;
-            var clientStream = tcpClient.GetStream();
 
-            byte[] buffer = new byte[4096];
-
-            RawHttpManager rawHttpManager = new RawHttpManager(responseBytes => SendBytesToClient(clientStream, responseBytes));
-
-
-            while (true)
-            {
-                int bytesRead = 0;
-
-                try
-                {
-                    //blocks until a client sends a message
-                    bytesRead = clientStream.Read(buffer, 0, 4096);
-                }
-                catch
-                {
-                    //a socket error has occured
-                    break;
-                }
-
-                if (bytesRead == 0)
-                {
-                    //the client has disconnected from the server
-                    break;
-                }
-
-                var message = buffer.Take(bytesRead).ToArray();
-                //message has successfully been received
-                ASCIIEncoding encoder = new ASCIIEncoding();
-                System.Diagnostics.Debug.WriteLine(encoder.GetString(message));
-                rawHttpManager.ProcessBytes(message);
-                
-                
-            }
-        }
-
-        void SendBytesToClient(NetworkStream clientStream, byte[] responseBytes)
-        {
-            clientStream.Write(responseBytes, 0, responseBytes.Length);
-            clientStream.Flush();
+            var connectionManager = new ConnectionManager(tcpClient);
+            connectionManager.ProcessBytes();
         }
     }
 }

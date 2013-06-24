@@ -9,16 +9,29 @@ namespace WebServer.Entities
     public enum ResponseStatusCode
     {
         Ok = 200,
+
+        NotModified =304,
+
+        BadRequest = 400,
+        NotFound = 404,
+
         InternalServerError = 500,
-        NotModified =304
+        
     }
 
     public class ResponseStatusDescription
     {
-        public static Dictionary<ResponseStatusCode, string> Default = new Dictionary<ResponseStatusCode, string>()
+        public static Dictionary<ResponseStatusCode, string> DefaultDescriptions = new Dictionary<ResponseStatusCode, string>()
                 {
                     { ResponseStatusCode.Ok, "OK" },
-                    { ResponseStatusCode.InternalServerError, "Internal Server Error" }                                                 
+
+                    { ResponseStatusCode.NotModified, "Not Modified" },   
+
+                    { ResponseStatusCode.BadRequest, "Bad Request" },
+                    { ResponseStatusCode.NotFound, "Not Found" },
+
+                    { ResponseStatusCode.InternalServerError, "Internal Server Error" },
+                                    
                 };
     }
 }

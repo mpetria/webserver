@@ -16,8 +16,15 @@ namespace WebServer.Entities
         public string Host { get; set; }
         public string Uri { get; set; }
 
-        public IDictionary<string, string> Headers { get; set; }
+        public IDictionary<string, string> Headers { get; private set; }
 
+        public void AddHeader(string key, string value)
+        {
+            key = key.Trim().ToLower();
+            value = value.Trim();
+
+            Headers.Add(key, value);
+        }
 
         public string GetHeaderValue(string key)
         {

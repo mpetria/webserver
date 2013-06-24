@@ -15,7 +15,7 @@ namespace WebServer.Entities
 
         public void AddStatusCode(ResponseStatusCode statusCode)
         {
-            var statusDescription = ResponseStatusDescription.Default[statusCode];
+            var statusDescription = ResponseStatusDescription.DefaultDescriptions[statusCode];
             ResponseString = String.Format("HTTP/1.1 {0} {1}\n", (int) statusCode, statusDescription);
         }
 
@@ -65,7 +65,7 @@ namespace WebServer.Entities
 
             if (response.LastModified != null)
             {
-                //raw.AddHeader("Cache-Control", "public");
+                //raw.AddHeader("Cache-Control", "public, max-age=0");
                 raw.AddDateHeader("Last-Modified", response.LastModified.Value);
             }
 
@@ -83,6 +83,10 @@ namespace WebServer.Entities
             if (bodyBytes != null)
             {
                 raw.AddContentLengthAndBeginBody(bodyBytes.Length);
+            }
+            else
+            {
+                raw.AddEmptyLine();
             }
 
             raw.CalculateBytes(bodyBytes);

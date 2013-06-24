@@ -10,7 +10,7 @@ namespace WebServer.Utils
     {
 
         static Regex _requestLineRegex = new Regex(@"(?<method>[^\s]+)\s+(?<uri>[^\s]+)\s+(?<authority>[^\s]+)");
-        static Regex _headerLineRegex = new Regex(@"(?<key>[^:]+):(?<value>[^:]+)");
+        static Regex _headerLineRegex = new Regex(@"(?<key>[^:]+):(?<value>.+)");
 
         public static bool ParseRequestLine(string requestLine, out string method, out string uri, out string authority)
         {

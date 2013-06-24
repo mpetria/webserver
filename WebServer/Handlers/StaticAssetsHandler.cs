@@ -34,13 +34,20 @@ Hello World";
 
             var headerIfModifiedSince = request.GetHeaderValue("If-Modified-Since");
             var filePath = Path.Combine(_directory, request.Uri.Trim("/".ToCharArray()));
+
+            if(!File.Exists(filePath))
+            {
+                response.StatusCode = ResponseStatusCode.NotFound;
+                return;
+            }
+
             DateTime lastModifiedDate = File.GetLastWriteTime(filePath);
             if (headerIfModifiedSince != null && DateUtils.CheckIfDatesMatch(lastModifiedDate, headerIfModifiedSince))
             {
                 response.StatusCode = ResponseStatusCode.NotModified;
                 response.LastModified = lastModifiedDate;
+                return;
             }
-            
             
             var fileContent = File.ReadAllBytes(filePath);
             response.LastModified = lastModifiedDate;
