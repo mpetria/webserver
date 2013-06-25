@@ -6,8 +6,9 @@ using WebServer.Entities;
 
 namespace WebServer.Handlers
 {
-    public abstract class ApplicationHandler
+    public interface IRequestHandler
     {
-        public abstract void HandleRequest(Request request, Response response);
+        void HandleRequest(Request request, Response response);
+        IList<string> GetAllowedMethods();
     }
 }

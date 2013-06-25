@@ -8,12 +8,16 @@ namespace WebServer.Entities
 
     public enum ResponseStatusCode
     {
+        Continue = 100,
+
         Ok = 200,
+        NoContent = 204,
 
         NotModified =304,
 
         BadRequest = 400,
         NotFound = 404,
+        MethodNotAllowed = 405,
 
         InternalServerError = 500,
         
@@ -29,6 +33,7 @@ namespace WebServer.Entities
 
                     { ResponseStatusCode.BadRequest, "Bad Request" },
                     { ResponseStatusCode.NotFound, "Not Found" },
+                    { ResponseStatusCode.MethodNotAllowed, "Method Not Allowed"},
 
                     { ResponseStatusCode.InternalServerError, "Internal Server Error" },
                                     

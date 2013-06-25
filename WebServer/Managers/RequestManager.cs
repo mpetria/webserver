@@ -5,6 +5,7 @@ using System.Text;
 using WebServer.Config;
 using WebServer.Entities;
 using WebServer.Handlers;
+using WebServer.Utils;
 using WebServer.Utils.Logging;
 
 namespace WebServer.Managers
@@ -24,12 +25,27 @@ namespace WebServer.Managers
         {
             _logger.Log("New Request", rawRequest.RequestLine);
 
-            var handler = new StaticAssetsHandler(ServerConfig.Instance.RootDirectory);
+            
             var request = RawRequest.BuildRequest(rawRequest);
-            var response = new Response();
-
             
 
+            var handler = ServerConfig.Instance.GetHandlerForPath(request.Uri);
+
+            if(handler == null)
+            {
+                return RawResponse.BuildRawResponse(ResponseStatusCode.NotFound);
+            }
+
+            var allowedMethods = handler.GetAllowedMethods();
+            if(!allowedMethods.Contains(request.Method))
+            {
+                var notAllowedResponse = new Response() {StatusCode = ResponseStatusCode.MethodNotAllowed};
+                notAllowedResponse.Headers["Allow"] = allowedMethods.JoinWithSeparator(",");
+                return RawResponse.BuildRawResponse(notAllowedResponse);
+            }
+
+
+            var response = new Response();
             handler.HandleRequest(request, response);
 
             var rawResponse = RawResponse.BuildRawResponse(response);

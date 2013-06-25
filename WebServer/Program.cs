@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Text;
+using WebServer.Config;
 
 namespace WebServer
 {
@@ -10,7 +11,7 @@ namespace WebServer
     {
         static void Main(string[] args)
         {
-            new Server().Start(IPAddress.Any, 9010);
+            new Server().Start(ServerConfig.Instance.IpAddress, ServerConfig.Instance.Port);
         }
     }
 }

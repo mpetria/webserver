@@ -16,7 +16,8 @@ namespace WebServer.Entities
         public void AddStatusCode(ResponseStatusCode statusCode)
         {
             var statusDescription = ResponseStatusDescription.DefaultDescriptions[statusCode];
-            ResponseString = String.Format("HTTP/1.1 {0} {1}\n", (int) statusCode, statusDescription);
+            ResponseString = String.Format("HTTP/1.1 {0} {1}", (int) statusCode, statusDescription);
+            AddEndLine();
         }
 
         public void AddDateHeader(string key, DateTime dateTime)
@@ -26,20 +27,21 @@ namespace WebServer.Entities
         }
       
 
-        public void AddEmptyLine()
+        public void AddEndLine()
         {
-            ResponseString += "\n";
+            ResponseString += "\r\n";
         }
 
         public void AddHeader(string key, string value)
         {
-            ResponseString += String.Format("{0}: {1}\n", key, value);
+            ResponseString += String.Format("{0}: {1}", key, value);
+            AddEndLine();
         }
 
         public void AddContentLengthAndBeginBody(int length)
         {
             AddHeader("Content-Length", length.ToString());
-            AddEmptyLine();
+            AddEndLine();
         }
 
         private void CalculateBytes(byte[] additionalBytes)
@@ -80,13 +82,23 @@ namespace WebServer.Entities
                 bodyBytes = response.BodyBytes;
             }
 
+            if(response.StatusCode == ResponseStatusCode.Continue || response.StatusCode == ResponseStatusCode.NoContent || response.StatusCode == ResponseStatusCode.NotModified)
+            {
+                if(bodyBytes != null)
+                    throw new Exception("Body not allowed for this response code");
+            }
+            else if (bodyBytes == null)
+            {
+                bodyBytes = new byte[0];
+            }
+
             if (bodyBytes != null)
             {
                 raw.AddContentLengthAndBeginBody(bodyBytes.Length);
             }
             else
             {
-                raw.AddEmptyLine();
+                raw.AddEndLine();
             }
 
             raw.CalculateBytes(bodyBytes);
@@ -95,7 +107,7 @@ namespace WebServer.Entities
 
         public static RawResponse BuildRawResponse(ResponseStatusCode statusCode)
         {
-            return BuildRawResponse(new Response() {StatusCode = statusCode, Body = String.Empty});
+            return BuildRawResponse(new Response() {StatusCode = statusCode});
         }
     }
 }

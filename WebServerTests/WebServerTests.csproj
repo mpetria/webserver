@@ -44,7 +44,8 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="RequestParserTests.cs" />
+    <Compile Include="Integration\SimpleRequestTests.cs" />
+    <Compile Include="Unit\RequestParserTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>

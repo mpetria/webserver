@@ -9,7 +9,7 @@ using WebServer.Utils;
 
 namespace WebServer.Handlers
 {
-    public class StaticAssetsHandler : ApplicationHandler
+    public class StaticAssetsHandler : IRequestHandler
     {
         private readonly string _directory;
 
@@ -28,7 +28,7 @@ Content-Length: 11
 
 Hello World";
 
-        public override void HandleRequest(Request request, Response response)
+        public void HandleRequest(Request request, Response response)
         {
             System.Diagnostics.Debug.WriteLine("Method {0} Host {1} Uri {2}", request.Method, request.Host, request.Uri);
 
@@ -56,6 +56,11 @@ Hello World";
 
             response.StatusCode = ResponseStatusCode.Ok;
             response.BodyBytes = fileContent;
+        }
+
+        public IList<string> GetAllowedMethods()
+        {
+            return new List<string>() {"GET"};
         }
     }
 }

@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using System.Text;
+using WebServer.Handlers;
 
 namespace WebServer.Config
 {
@@ -33,7 +35,31 @@ namespace WebServer.Config
             return ExtensionsToMimeTypes[extension];
         }
 
-        public string RootDirectory = @"C:\Work\SiteRoot";
+        public static string RootDirectory = @"C:\Work\SiteRoot";
+
+
+
+        public string Host { get; set; }
+        public Dictionary<string, Func<IRequestHandler>> HandlerMappings = new Dictionary<string, Func<IRequestHandler>>()
+        {
+            { "", () => new StaticAssetsHandler(RootDirectory) }
+        };
+
+        public IRequestHandler GetHandlerForPath(string path)
+        {
+            foreach (var handlerMapping in HandlerMappings)
+            {
+                if (path.StartsWith(handlerMapping.Key))
+                    return handlerMapping.Value();
+            }
+            return null;
+        }
+
+        public int Port = 9010;
+        public IPAddress IpAddress = IPAddress.Loopback;
+
+
+
 
         public static ServerConfig Instance = new ServerConfig();
     }
