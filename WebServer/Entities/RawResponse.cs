@@ -40,7 +40,7 @@ namespace WebServer.Entities
 
         public void AddContentLengthAndBeginBody(int length)
         {
-            AddHeader("Content-Length", length.ToString());
+            AddHeader(HttpHeader.ContentLength, length.ToString());
             AddEndLine();
         }
 
@@ -56,19 +56,19 @@ namespace WebServer.Entities
             raw.AddStatusCode(response.StatusCode);
             
             
-            raw.AddDateHeader("Date", DateTime.Now);
+            raw.AddDateHeader(HttpHeader.Date, DateTime.Now);
             foreach (var pair in response.Headers)
             {
                 raw.AddHeader(pair.Key, pair.Value);
             }
 
             if (!String.IsNullOrEmpty(response.ContentType))
-                raw.AddHeader("Content-Type", response.ContentType);
+                raw.AddHeader(HttpHeader.ContentType, response.ContentType);
 
             if (response.LastModified != null)
             {
                 //raw.AddHeader("Cache-Control", "public, max-age=0");
-                raw.AddDateHeader("Last-Modified", response.LastModified.Value);
+                raw.AddDateHeader(HttpHeader.LastModified, response.LastModified.Value);
             }
 
 

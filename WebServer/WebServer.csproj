@@ -45,6 +45,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Config\ServerConfig.cs" />
+    <Compile Include="Entities\HttpHeader.cs" />
     <Compile Include="Entities\RawRequest.cs" />
     <Compile Include="Entities\RawResponse.cs" />
     <Compile Include="Entities\Request.cs" />
