@@ -87,10 +87,15 @@ namespace WebServer.Entities
                 if(bodyBytes != null)
                     throw new Exception("Body not allowed for this response code");
             }
+            else if (response.SuppressBody)
+            {
+                bodyBytes = null;
+            }
             else if (bodyBytes == null)
             {
                 bodyBytes = new byte[0];
             }
+           
 
             if (bodyBytes != null)
             {

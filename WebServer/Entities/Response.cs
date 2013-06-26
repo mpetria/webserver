@@ -12,6 +12,7 @@ namespace WebServer.Entities
         public Response()
         {
             Headers = new Dictionary<string, string>();
+            SuppressBody = false;
         }
         
         public string Body { get; set; }
@@ -24,6 +25,8 @@ namespace WebServer.Entities
 
 
         public Dictionary<string, string> Headers { get; set; }
+
+        public bool SuppressBody { get; set; }
         
     }
 }

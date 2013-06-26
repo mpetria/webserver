@@ -20,8 +20,10 @@ namespace WebServer.Handlers
 
         public void HandleRequest(Request request, Response response)
         {
-            var headerIfModifiedSince = request.GetHeaderValue(HttpHeader.IfModifiedSince);
+            
             var filePath = Path.Combine(_directory, request.Uri.Trim("/".ToCharArray()));
+
+            bool returnResponse = false;
 
             if(!File.Exists(filePath))
             {
@@ -29,26 +31,62 @@ namespace WebServer.Handlers
                 return;
             }
 
-            DateTime lastModifiedDate = File.GetLastWriteTime(filePath);
-            if (headerIfModifiedSince != null && DateUtils.CheckIfDatesMatch(lastModifiedDate, headerIfModifiedSince))
-            {
-                response.StatusCode = ResponseStatusCode.NotModified;
-                response.LastModified = lastModifiedDate;
-                return;
-            }
+            returnResponse = HandleCaching(request, response);
+            if(returnResponse) return;
             
-            var fileContent = File.ReadAllBytes(filePath);
-            response.LastModified = lastModifiedDate;
+            
             var extension = Path.GetExtension(filePath);
             response.ContentType = new ServerConfig().GetMimeTypeForExtension(extension);
-
             response.StatusCode = ResponseStatusCode.OK;
-            response.BodyBytes = fileContent;
+
+            HandleBody(request, response);
         }
 
         public IList<string> GetAllowedMethods()
         {
-            return new List<string>() {"GET"};
+            return new List<string>() { HTTPMethod.GET, HTTPMethod.HEAD };
+        }
+
+        public bool HandleCaching(Request request, Response response)
+        {
+            var filePath = GetPhysicalPath(request);
+            var headerIfModifiedSince = request.GetHeaderValue(HttpHeader.IfModifiedSince);
+            DateTime lastModifiedDate = File.GetLastWriteTime(filePath);
+            
+            response.LastModified = lastModifiedDate;
+
+            if (headerIfModifiedSince != null && DateUtils.CheckIfDatesMatch(lastModifiedDate, headerIfModifiedSince))
+            {
+                response.StatusCode = ResponseStatusCode.NotModified;
+                return true;
+            }
+
+            return false;
+        }
+
+        public bool HandleBody(Request request, Response response)
+        {
+            var filePath = GetPhysicalPath(request);
+
+            if(request.Method == HTTPMethod.HEAD)
+            {
+                var fileInfo = new FileInfo(filePath);
+                response.Headers[HttpHeader.ContentLength] = fileInfo.Length.ToString();
+                response.SuppressBody = true;
+            }
+            else if(request.Method == HTTPMethod.GET)
+            {
+                var fileContent = File.ReadAllBytes(filePath);
+                response.BodyBytes = fileContent;
+            }
+
+            return false;
+        }
+
+        public string GetPhysicalPath(Request request)
+        {
+            var filePath = Path.Combine(_directory, request.Uri.Trim("/".ToCharArray()));
+            return filePath;
         }
     }
 }

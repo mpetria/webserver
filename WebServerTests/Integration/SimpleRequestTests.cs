@@ -14,13 +14,32 @@ namespace WebServerTests.Integration
         [Test]
         public void SimpleGet()
         {
-            var uri = String.Format("http://{0}:{1}", ServerConfig.Instance.IpAddress, ServerConfig.Instance.Port);
-            Console.WriteLine(uri+"/home.html");
+            var serverUri = String.Format("http://{0}:{1}", ServerConfig.Instance.IpAddress, ServerConfig.Instance.Port);
+            var uri = serverUri + "/home.html";
+
+            Console.WriteLine(uri);
 
             var request = WebRequest.Create(uri);
-            request.Method = "PUT";
+            request.Method = "GET";
 
             using(var response = request.GetResponse())
+            {
+                Console.WriteLine(response.ToString());
+            }
+        }
+
+        [Test]
+        public void SimpleHead()
+        {
+            var serverUri = String.Format("http://{0}:{1}", ServerConfig.Instance.IpAddress, ServerConfig.Instance.Port);
+            var uri = serverUri + "/home.html";
+
+            Console.WriteLine(uri);
+
+            var request = WebRequest.Create(uri);
+            request.Method = "HEAD";
+
+            using (var response = request.GetResponse())
             {
                 Console.WriteLine(response.ToString());
             }
