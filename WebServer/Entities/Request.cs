@@ -24,6 +24,9 @@ namespace WebServer.Entities
             value = value.Trim();
 
             Headers.Add(key, value);
+
+            if (key == "host")
+                Host = value;
         }
 
         public string GetHeaderValue(string key)
@@ -32,6 +35,24 @@ namespace WebServer.Entities
             if (!Headers.ContainsKey(lookupKey))
                 return null;
             return Headers[lookupKey];
+        }
+
+        public bool IsValid()
+        {
+            if (Host == null)
+                return false;
+            if (Method != HTTPMethod.TRACE 
+                && Method != HTTPMethod.PUT 
+                && Method != HTTPMethod.POST 
+                && Method != HTTPMethod.OPTIONS 
+                && Method != HTTPMethod.HEAD 
+                && Method != HTTPMethod.GET 
+                && Method != HTTPMethod.DELETE 
+                && Method != HTTPMethod.CONNECT)
+                return false;
+
+            return true;
+
         }
     }
 }

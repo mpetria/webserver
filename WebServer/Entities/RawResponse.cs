@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using WebServer.Utils;
@@ -10,6 +11,7 @@ namespace WebServer.Entities
     {
         public byte[] ResponseBytes { get; set; }
         public string ResponseString { get; set; }
+        public Stream ResponseStream { get; set; }
 
         private ASCIIEncoding _asciiEncoding = new ASCIIEncoding();
 
@@ -91,7 +93,7 @@ namespace WebServer.Entities
             {
                 bodyBytes = null;
             }
-            else if (bodyBytes == null)
+            else if (bodyBytes == null &&  response.BodyStream != null)
             {
                 bodyBytes = new byte[0];
             }
@@ -105,6 +107,8 @@ namespace WebServer.Entities
             {
                 raw.AddEndLine();
             }
+
+            raw.ResponseStream = response.BodyStream;
 
             raw.CalculateBytes(bodyBytes);
             return raw;

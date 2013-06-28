@@ -52,8 +52,8 @@
     <Compile Include="Entities\Request.cs" />
     <Compile Include="Entities\Response.cs" />
     <Compile Include="Entities\ResponseStatusCode.cs" />
-    <Compile Include="Handlers\IRequestHandler.cs" />
-    <Compile Include="Handlers\StaticAssetsHandler.cs" />
+    <Compile Include="Handlers\IResourceHandler.cs" />
+    <Compile Include="Handlers\FileHandler.cs" />
     <Compile Include="Managers\ConnectionManager.cs" />
     <Compile Include="Managers\RawRequestManager.cs" />
     <Compile Include="Managers\RequestManager.cs" />

@@ -101,6 +101,35 @@ namespace WebServer.Managers
             var rawResponse = requestManager.ProceesRequest(_currentRequest);
 
             SendBytesToClient(rawResponse.ResponseBytes);
+            if(rawResponse.ResponseStream != null)
+            {
+                while (true)
+                {
+                    byte[] buffer = new byte[4096];
+                    int bytesRead = 0;
+
+                    try
+                    {
+                        //blocks until a client sends a message
+                        bytesRead = rawResponse.ResponseStream.Read(buffer, 0, 4096);
+                    }
+                    catch
+                    {
+                        //a socket error has occured
+                        break;
+                    }
+
+                    if (bytesRead == 0)
+                    {
+                        //the client has disconnected from the server
+                        break;
+                    }
+
+                    var message = buffer.Take(bytesRead).ToArray();
+                    SendBytesToClient(message);
+                }
+            }
+
             _httpParserState = HttpParserState.RequestDelivered;
             return true;
 

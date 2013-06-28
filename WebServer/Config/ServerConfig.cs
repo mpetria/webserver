@@ -40,12 +40,12 @@ namespace WebServer.Config
 
 
         public string Host { get; set; }
-        public Dictionary<string, Func<IRequestHandler>> HandlerMappings = new Dictionary<string, Func<IRequestHandler>>()
+        public Dictionary<string, Func<IResourceHandler>> HandlerMappings = new Dictionary<string, Func<IResourceHandler>>()
         {
-            { "", () => new StaticAssetsHandler(RootDirectory) }
+            { "", () => new FileHandler(RootDirectory) }
         };
 
-        public IRequestHandler GetHandlerForPath(string path)
+        public IResourceHandler GetHandlerForPath(string path)
         {
             foreach (var handlerMapping in HandlerMappings)
             {
@@ -57,6 +57,12 @@ namespace WebServer.Config
 
         public int Port = 9010;
         public IPAddress IpAddress = IPAddress.Loopback;
+
+
+
+        public int MaxUriLength = 512;
+
+        public bool UseStreams = true;
 
 
 

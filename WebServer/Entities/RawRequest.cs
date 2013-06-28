@@ -51,10 +51,9 @@ namespace WebServer.Entities
             string authority;
 
             RequestParser.ParseRequestLine(rawRequest.RequestLine, out method, out uri, out authority);
-
             
 
-            var request = new Request() {Method = method, Host = "", Uri = uri};
+            var request = new Request() {Method = method, Uri = uri};
 
 
             foreach (var headerLine in rawRequest.HeaderLines)

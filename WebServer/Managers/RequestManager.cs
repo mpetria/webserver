@@ -14,45 +14,173 @@ namespace WebServer.Managers
     {
         private readonly ILogger _logger;
         private readonly string _requestId;
+        private readonly ServerConfig _serverConfig;
 
         public RequestManager()
         {
             _requestId = Guid.NewGuid().ToString();
             _logger = new RequestLogger("connection", _requestId);
+            _serverConfig = ServerConfig.Instance;
         }
 
         public RawResponse ProceesRequest(RawRequest rawRequest)
         {
             _logger.Log("New Request", rawRequest.RequestLine);
 
-            
             var request = RawRequest.BuildRequest(rawRequest);
-            
-
-            var handler = ServerConfig.Instance.GetHandlerForPath(request.Uri);
-
-            if(handler == null)
-            {
-                return RawResponse.BuildRawResponse(ResponseStatusCode.NotFound);
-            }
-
-            var allowedMethods = handler.GetAllowedMethods();
-            if(!allowedMethods.Contains(request.Method))
-            {
-                var notAllowedResponse = new Response() {StatusCode = ResponseStatusCode.MethodNotAllowed};
-                notAllowedResponse.Headers["Allow"] = allowedMethods.JoinWithSeparator(",");
-                return RawResponse.BuildRawResponse(notAllowedResponse);
-            }
-
-
-            var response = new Response();
-            handler.HandleRequest(request, response);
-
+            var response = InnerProceesRequest(request);
             var rawResponse = RawResponse.BuildRawResponse(response);
 
             _logger.Log("New Response", response.StatusCode.ToString());
 
             return rawResponse;
+        }
+
+        private Response InnerProceesRequest(Request request)
+        {
+            var response = new Response();
+            bool returnResponse = false;
+
+
+            returnResponse = ValidateRequest(request, response);
+            if (returnResponse) return response;
+
+            var handler = _serverConfig.GetHandlerForPath(request.Uri);
+
+            returnResponse = CheckIfResourceExits(handler, request, response);
+            if (returnResponse) return response;
+
+
+            returnResponse = CheckIfMethodIsAllowed(handler, request, response);
+            if (returnResponse) return response;
+
+            returnResponse = CheckIfMediaTypeIsAllowed(handler, request, response);
+            if (returnResponse) return response;
+
+            returnResponse = HandleCaching(handler, request, response);
+            if (returnResponse) return response;
+
+            returnResponse = ProduceBody(handler, request, response);
+            if (returnResponse) return response;
+            
+            response.StatusCode = ResponseStatusCode.OK;
+
+            return response;
+        }
+
+        public bool ValidateRequest(Request request, Response response)
+        {
+            if (!request.IsValid())
+            {
+                response.StatusCode = ResponseStatusCode.BadRequest;
+                return true;
+            }
+
+            if(request.Uri.Length > _serverConfig.MaxUriLength)
+            {
+                response.StatusCode = ResponseStatusCode.RequestURITooLong;
+                return true;
+            }
+
+            return false;
+        }
+
+        public bool CheckIfResourceExits(IResourceHandler handler, Request request, Response response)
+        {
+            if (handler == null)
+            {
+                response.StatusCode = ResponseStatusCode.NotFound;
+                return true;
+            }
+
+            if(request.Method == HTTPMethod.HEAD || request.Method == HTTPMethod.GET)
+            {
+                if (!handler.CheckIfExists(request.Uri))
+                {
+                    response.StatusCode = ResponseStatusCode.NotFound;
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        public bool CheckIfMethodIsAllowed(IResourceHandler handler, Request request, Response response)
+        {
+            var allowedMethods = handler.GetAllowedMethods(request.Uri);
+            if (!allowedMethods.Contains(request.Method))
+            {
+                response.StatusCode = ResponseStatusCode.MethodNotAllowed;
+                response.Headers[HttpHeader.Allow] = allowedMethods.JoinWithSeparator(",");
+                return true;
+            }
+
+            return false;
+        }
+
+        public bool CheckIfMediaTypeIsAllowed(IResourceHandler handler, Request request, Response response)
+        {
+            var allowedMediaTypes = handler.GetAllowedMediaTypes(request.Method, request.Uri);
+            var contentType = request.GetHeaderValue(HttpHeader.ContentType);
+            if (contentType != null && !allowedMediaTypes.Contains(contentType))
+            {
+                response.StatusCode = ResponseStatusCode.UnsupportedMediaType;
+                return true;
+            }
+
+            return false;
+        }
+
+        public bool HandleCaching(IResourceHandler handler, Request request, Response response)
+        {
+            string lastModifiedDate, eTag;
+
+            handler.GetVersioning(request.Uri, out lastModifiedDate, out eTag);
+            response.Headers.Add(HttpHeader.LastModified, lastModifiedDate);
+            response.Headers.Add(HttpHeader.ETag, eTag);
+
+            var headerIfModifiedSince = request.GetHeaderValue(HttpHeader.IfModifiedSince);
+            if (headerIfModifiedSince != null && lastModifiedDate == headerIfModifiedSince)
+            {
+                response.StatusCode = ResponseStatusCode.NotModified;
+                return true;
+            }
+
+            return false;
+        }
+
+        public bool ProduceBody(IResourceHandler handler, Request request, Response response)
+        {
+            var availableMediaTypes = handler.GetAvailableMediaTypes(request.Uri, request.Method);
+
+            // check accept headers
+
+            var chosenMediaType = availableMediaTypes.FirstOrDefault();
+            response.ContentType = chosenMediaType;
+
+            if (request.Method == HTTPMethod.HEAD)
+            {
+                var length = handler.GetResourceLength(request.Uri, chosenMediaType);
+                response.Headers[HttpHeader.ContentLength] = length.ToString();
+                response.SuppressBody = true;
+            }
+            else if (request.Method == HTTPMethod.GET)
+            {
+                if(_serverConfig.UseStreams)
+                {
+                    var length = handler.GetResourceLength(request.Uri, chosenMediaType);
+                    response.Headers[HttpHeader.ContentLength] = length.ToString();
+                    response.BodyStream = handler.GetResourceStream(request.Uri, chosenMediaType);
+                }
+                else
+                {
+                    var fileContent = handler.GetResourceBytes(request.Uri, chosenMediaType);
+                    response.BodyBytes = fileContent;
+                }
+                
+            }
+
+            return false;
         }
     }
 }
