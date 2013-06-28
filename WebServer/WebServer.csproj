@@ -52,8 +52,10 @@
     <Compile Include="Entities\Request.cs" />
     <Compile Include="Entities\Response.cs" />
     <Compile Include="Entities\ResponseStatusCode.cs" />
+    <Compile Include="Handlers\FolderResourceHandler.cs" />
+    <Compile Include="Handlers\FsResourceHandler.cs" />
     <Compile Include="Handlers\IResourceHandler.cs" />
-    <Compile Include="Handlers\FileHandler.cs" />
+    <Compile Include="Handlers\FileResourceHandler.cs" />
     <Compile Include="Managers\ConnectionManager.cs" />
     <Compile Include="Managers\ConnectionManagerFactory.cs" />
     <Compile Include="Managers\IConnectionManager.cs" />

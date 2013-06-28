@@ -1,0 +1,78 @@
+﻿using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Text;
+using WebServer.Config;
+using WebServer.Entities;
+using WebServer.Utils;
+
+namespace WebServer.Handlers
+{
+    public class FileResourceHandler : FsResourceHandler
+    {
+        public FileResourceHandler(string directory) : base(directory)
+        {
+         
+        }
+
+
+        override public bool CheckIfExists(string resourceUri)
+        {
+            var filePath = GetPhysicalPath(resourceUri);
+
+            if (!File.Exists(filePath))
+                return false;
+            return true;
+        }
+
+        override public IList<string> GetAllowedMethods(string resourceUri)
+        {
+            return new List<string>() { HTTPMethod.GET, HTTPMethod.HEAD };
+        }
+
+        override public IList<string> GetAllowedMediaTypes(string resourceUri, string method)
+        {
+            return new List<string>();
+        }
+
+        override public bool GetVersioning(string resourceUri, out string lastUpdateDate, out string eTag)
+        {
+            var filePath = GetPhysicalPath(resourceUri);
+            DateTime lastModifiedDate = File.GetLastWriteTime(filePath);
+            lastUpdateDate = DateUtils.GetFormatedServerDate(lastModifiedDate.ToUniversalTime());
+            eTag = lastUpdateDate.Replace(' ','-');
+            return true;
+        }
+
+        override public long GetResourceLength(string resourceUri, string contentType)
+        {
+            var filePath = GetPhysicalPath(resourceUri);
+            var fileInfo = new FileInfo(filePath);
+            return fileInfo.Length;
+        }
+
+        override public byte[] GetResourceBytes(string resourceUri, string contentType)
+        {
+            var filePath = GetPhysicalPath(resourceUri);
+            var fileContent = File.ReadAllBytes(filePath);
+            return fileContent;
+        }
+
+        override public Stream GetResourceStream(string resourceUri, string contentType)
+        {
+            var filePath = GetPhysicalPath(resourceUri);
+            return File.OpenRead(filePath);
+        }
+
+        override public IList<string> GetAvailableMediaTypes(string resourceUri, string method)
+        {
+            var filePath = GetPhysicalPath(resourceUri);
+            var extension = Path.GetExtension(filePath);
+            var mediaType = _serverConfig.GetMimeTypeForExtension(extension);
+            return new List<string>(){ mediaType };
+        }
+
+       
+    }
+}

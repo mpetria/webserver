@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Text;
@@ -35,24 +36,23 @@ namespace WebServer.Config
             return ExtensionsToMimeTypes[extension];
         }
 
-        public static string RootDirectory = @"C:\Work\SiteRoot";
+        public string RootDirectory = @"C:\Work\SiteRoot";
 
 
 
         public string Host { get; set; }
-        public Dictionary<string, Func<IResourceHandler>> HandlerMappings = new Dictionary<string, Func<IResourceHandler>>()
-        {
-            { "", () => new FileHandler(RootDirectory) }
-        };
+        
 
         public IResourceHandler GetHandlerForPath(string path)
         {
-            foreach (var handlerMapping in HandlerMappings)
+            if(!Path.HasExtension(path))
             {
-                if (path.StartsWith(handlerMapping.Key))
-                    return handlerMapping.Value();
+                return new FolderResourceHandler(RootDirectory);
             }
-            return null;
+            else
+            {
+                return new FileResourceHandler(RootDirectory);
+            }
         }
 
         public int Port = 9010;
@@ -62,7 +62,7 @@ namespace WebServer.Config
 
         public int MaxUriLength = 512;
 
-        public bool UseStreams = true;
+        public bool UseStreams = false;
 
 
 
