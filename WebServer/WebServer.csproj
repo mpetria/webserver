@@ -55,6 +55,9 @@
     <Compile Include="Handlers\IResourceHandler.cs" />
     <Compile Include="Handlers\FileHandler.cs" />
     <Compile Include="Managers\ConnectionManager.cs" />
+    <Compile Include="Managers\ConnectionManagerFactory.cs" />
+    <Compile Include="Managers\IConnectionManager.cs" />
+    <Compile Include="Managers\IDataManager.cs" />
     <Compile Include="Managers\RawRequestManager.cs" />
     <Compile Include="Managers\RequestManager.cs" />
     <Compile Include="Program.cs" />

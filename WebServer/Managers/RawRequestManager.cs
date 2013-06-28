@@ -1,10 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using WebServer.Config;
 using WebServer.Entities;
 using WebServer.Handlers;
+using WebServer.Utils.Logging;
 
 namespace WebServer.Managers
 {
@@ -25,17 +27,18 @@ namespace WebServer.Managers
         public const byte HT = 9;
     }
 
-    public class RawRequestManager
+    public class RawRequestManager : IDataManager
     {
-        private readonly Action<byte[]> SendBytesToClient;
+        private readonly ILogger _logger;
+        private IDataManager _responseManager;
         private byte[] _unprocessedBytes;
 
         private HttpParserState _httpParserState;
         private RawRequest _currentRequest;
 
-        public  RawRequestManager(Action<byte[]> sendBytesToClient)
+        public  RawRequestManager(ILogger logger)
         {
-            SendBytesToClient = sendBytesToClient;
+            _logger = logger;
             _unprocessedBytes = new byte[0];
             
             InitializeNewRequest();
@@ -43,7 +46,19 @@ namespace WebServer.Managers
         }
 
 
-        public void ProcessBytes(byte[] receivedBytes)
+        public void SetLinkedDataManager(IDataManager dataManager)
+        {
+            _responseManager = dataManager;
+        }
+
+
+        public void ManageStream(Stream stream)
+        {
+            
+        }
+
+
+        public void ManageBytes(byte[] receivedBytes)
         {
             _unprocessedBytes = _unprocessedBytes.Concat(receivedBytes).ToArray();
 
@@ -55,7 +70,7 @@ namespace WebServer.Managers
             {
                 var internalServerError = RawResponse.BuildRawResponse(ResponseStatusCode.InternalServerError);
                 InitializeNewRequest();
-                SendBytesToClient(internalServerError.ResponseBytes);
+                _responseManager.ManageBytes(internalServerError.ResponseBytes);
             }
         }
 
@@ -100,34 +115,12 @@ namespace WebServer.Managers
             var requestManager = new RequestManager();
             var rawResponse = requestManager.ProceesRequest(_currentRequest);
 
-            SendBytesToClient(rawResponse.ResponseBytes);
+            
+            
+            _responseManager.ManageBytes(rawResponse.ResponseBytes);
             if(rawResponse.ResponseStream != null)
             {
-                while (true)
-                {
-                    byte[] buffer = new byte[4096];
-                    int bytesRead = 0;
-
-                    try
-                    {
-                        //blocks until a client sends a message
-                        bytesRead = rawResponse.ResponseStream.Read(buffer, 0, 4096);
-                    }
-                    catch
-                    {
-                        //a socket error has occured
-                        break;
-                    }
-
-                    if (bytesRead == 0)
-                    {
-                        //the client has disconnected from the server
-                        break;
-                    }
-
-                    var message = buffer.Take(bytesRead).ToArray();
-                    SendBytesToClient(message);
-                }
+              _responseManager.ManageStream(rawResponse.ResponseStream);
             }
 
             _httpParserState = HttpParserState.RequestDelivered;

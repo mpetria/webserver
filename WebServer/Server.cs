@@ -47,8 +47,8 @@ namespace WebServer
         {
             TcpClient tcpClient = tcpClientObject as TcpClient;
 
-            var connectionManager = new ConnectionManager(tcpClient);
-            connectionManager.ProcessBytes();
+            var connectionManager = ConnectionManagerFactory.CreateInstance(tcpClient);
+            connectionManager.ListenForBytesFromClient();
         }
     }
 }

@@ -93,11 +93,10 @@ namespace WebServer.Entities
             {
                 bodyBytes = null;
             }
-            else if (bodyBytes == null &&  response.BodyStream != null)
+            else if (bodyBytes == null &&  response.BodyStream == null)
             {
                 bodyBytes = new byte[0];
             }
-           
 
             if (bodyBytes != null)
             {
