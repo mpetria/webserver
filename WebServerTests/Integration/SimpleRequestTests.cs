@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Text;
@@ -38,6 +39,30 @@ namespace WebServerTests.Integration
 
             var request = WebRequest.Create(uri);
             request.Method = "HEAD";
+
+            using (var response = request.GetResponse())
+            {
+                Console.WriteLine(response.ToString());
+            }
+        }
+
+        [Test]
+        public void SimplePut()
+        {
+            var serverUri = String.Format("http://{0}:{1}", ServerConfig.Instance.IpAddress, ServerConfig.Instance.Port);
+            var uri = serverUri + "/home2.html";
+
+            Console.WriteLine(uri);
+
+            var request = WebRequest.Create(uri);
+            request.Method = "PUT";
+            request.ContentType = "text/html";
+            const string requestBody = @"<html><body>Hello PUT</body><html>";
+            var requestBodyBytes = new ASCIIEncoding().GetBytes(requestBody);
+            using (var requestStream = request.GetRequestStream())
+            {
+                requestStream.Write(requestBodyBytes, 0, requestBodyBytes.Length);
+            }
 
             using (var response = request.GetResponse())
             {

@@ -47,17 +47,19 @@ namespace WebServer.Managers
 
             var handler = _serverConfig.GetHandlerForPath(request.Uri);
 
-            returnResponse = CheckIfResourceExits(handler, request, response);
-            if (returnResponse) return response;
-
-
             returnResponse = CheckIfMethodIsAllowed(handler, request, response);
+            if (returnResponse) return response;
+            
+            returnResponse = CheckIfResourceExits(handler, request, response);
             if (returnResponse) return response;
 
             returnResponse = CheckIfMediaTypeIsAllowed(handler, request, response);
             if (returnResponse) return response;
 
-            returnResponse = HandleCaching(handler, request, response);
+            returnResponse = HandleVersioning(handler, request, response);
+            if (returnResponse) return response;
+
+            returnResponse = ProcessBody(handler, request, response);
             if (returnResponse) return response;
 
             returnResponse = ProduceBody(handler, request, response);
@@ -66,6 +68,24 @@ namespace WebServer.Managers
             response.StatusCode = ResponseStatusCode.OK;
 
             return response;
+        }
+
+        private bool ProcessBody(IResourceHandler handler, Request request, Response response)
+        {
+            if(request.Method == HTTPMethod.PUT)
+            {
+                var created = handler.CreateOrUpdateResource(request.Uri, request.GetHeaderValue(HttpHeader.ContentType), request.Body);
+                if(created)
+                {
+                    response.StatusCode = ResponseStatusCode.Created;
+                }
+                else
+                {
+                    response.StatusCode = ResponseStatusCode.OK;
+                }
+                return true;
+            }
+            return false;
         }
 
         public bool ValidateRequest(Request request, Response response)
@@ -87,12 +107,6 @@ namespace WebServer.Managers
 
         public bool CheckIfResourceExits(IResourceHandler handler, Request request, Response response)
         {
-            if (handler == null)
-            {
-                response.StatusCode = ResponseStatusCode.NotFound;
-                return true;
-            }
-
             if(request.Method == HTTPMethod.HEAD || request.Method == HTTPMethod.GET)
             {
                 if (!handler.CheckIfExists(request.Uri))
@@ -120,7 +134,7 @@ namespace WebServer.Managers
 
         public bool CheckIfMediaTypeIsAllowed(IResourceHandler handler, Request request, Response response)
         {
-            var allowedMediaTypes = handler.GetAllowedMediaTypes(request.Method, request.Uri);
+            var allowedMediaTypes = handler.GetAllowedMediaTypes(request.Uri, request.Method);
             var contentType = request.GetHeaderValue(HttpHeader.ContentType);
             if (contentType != null && !allowedMediaTypes.Contains(contentType))
             {
@@ -131,7 +145,7 @@ namespace WebServer.Managers
             return false;
         }
 
-        public bool HandleCaching(IResourceHandler handler, Request request, Response response)
+        public bool HandleVersioning(IResourceHandler handler, Request request, Response response)
         {
             string lastModifiedDate, eTag;
 

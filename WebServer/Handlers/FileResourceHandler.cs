@@ -28,12 +28,13 @@ namespace WebServer.Handlers
 
         override public IList<string> GetAllowedMethods(string resourceUri)
         {
-            return new List<string>() { HTTPMethod.GET, HTTPMethod.HEAD };
+            return new List<string>() { HTTPMethod.GET, HTTPMethod.HEAD, HTTPMethod.PUT };
         }
 
         override public IList<string> GetAllowedMediaTypes(string resourceUri, string method)
         {
-            return new List<string>();
+            // allowing the same media types that can be produced
+            return GetAvailableMediaTypes(resourceUri, method);
         }
 
         override public bool GetVersioning(string resourceUri, out string lastUpdateDate, out string eTag)
@@ -73,6 +74,18 @@ namespace WebServer.Handlers
             return new List<string>(){ mediaType };
         }
 
+        override public bool CreateOrUpdateResource(string resourceUri, string contentType, byte[] content)
+        {
+            var alreadyExists = CheckIfExists(resourceUri);
+            var filePath = GetPhysicalPath(resourceUri);
+            
+            using(var fileStream = File.Create(filePath))
+            {
+                fileStream.Write(content, 0, content.Length);
+            }
+
+            return !alreadyExists;
+        }
        
     }
 }

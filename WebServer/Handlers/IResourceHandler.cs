@@ -20,5 +20,9 @@ namespace WebServer.Handlers
         Stream GetResourceStream(string resourceUri, string contentType);
 
         IList<string> GetAvailableMediaTypes(string resourceUri, string method);
+
+        bool CreateOrUpdateResource(string resourceUri, string contentType, byte[] content);
+        
+
     }
 }

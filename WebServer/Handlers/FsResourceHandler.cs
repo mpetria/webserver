@@ -60,6 +60,11 @@ namespace WebServer.Handlers
             return new List<string>();
         }
 
+        public virtual bool CreateOrUpdateResource(string resourceUri, string contentType, byte[] content)
+        {
+            return false;
+        }
+
         public string GetPhysicalPath(string requestUri)
         {
             var filePath = Path.Combine(_directory, requestUri.Trim("/".ToCharArray()));

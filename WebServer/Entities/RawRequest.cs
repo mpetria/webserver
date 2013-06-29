@@ -62,6 +62,8 @@ namespace WebServer.Entities
                 RequestParser.ParseHeaderLine(headerLine, out key, out value);
                 request.AddHeader(key, value);
             }
+
+            request.Body = rawRequest.Body;
             return request;
         }
     }
