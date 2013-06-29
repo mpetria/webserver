@@ -12,8 +12,8 @@ namespace WebServer.Entities
         public string RequestLine { get; set; }
         public IList<string> HeaderLines { get; set; }
         public byte[] Body { get; set; }
-        public int ContentLength { get; set; }
-        public string BodyAsciiString { get; set; }
+        public int? ContentLength { get; set; }
+        public bool IsChunkedTransferEncoding { get; set; }
 
         private ASCIIEncoding _asciiEncoding = new ASCIIEncoding();
 
@@ -24,13 +24,21 @@ namespace WebServer.Entities
 
             string headerLine = _asciiEncoding.GetString(headerLineBytes);
             HeaderLines.Add(headerLine);
-            if(headerLine.StartsWith("Content-Length:"))
+
+            string key, value;
+            RequestParser.ParseHeaderLine(headerLine, out key, out value);
+
+            if(key == HttpHeader.ContentLength)
             {
-                string contentLengthString = headerLine.Substring("Content-Length:".Length);
                 int contentLength;
-                int.TryParse(contentLengthString, out contentLength);
+                int.TryParse(value, out contentLength);
                 ContentLength = contentLength;
             }
+            else if(key == HttpHeader.TransferEncoding && value == "chunked")
+            {
+                IsChunkedTransferEncoding = true;
+            }
+
         }
 
         public void AddRequestLine(byte[] requestLineBytes)
@@ -41,7 +49,6 @@ namespace WebServer.Entities
         public void AddBody(byte[] bodyBytes)
         {
             Body = bodyBytes;
-            BodyAsciiString = _asciiEncoding.GetString(Body);
         }
 
         public static Request BuildRequest(RawRequest rawRequest)

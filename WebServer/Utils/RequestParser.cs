@@ -34,8 +34,8 @@ namespace WebServer.Utils
             key = value = null;
             if (!match.Success) return false;
 
-            key = match.Groups["key"].Value;
-            value = match.Groups["value"].Value;
+            key = match.Groups["key"].Value.Trim();
+            value = match.Groups["value"].Value.Trim();
 
             return true;
 

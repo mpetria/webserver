@@ -69,5 +69,39 @@ namespace WebServerTests.Integration
                 Console.WriteLine(response.ToString());
             }
         }
+
+
+        [Test]
+        public void ChunkedPut()
+        {
+            var serverUri = String.Format("http://{0}:{1}", ServerConfig.Instance.IpAddress, ServerConfig.Instance.Port);
+            var uri = serverUri + "/home2.html";
+
+            Console.WriteLine(uri);
+
+            var request = WebRequest.Create(uri) as HttpWebRequest;
+            request.Method = "PUT";
+            request.ContentType = "text/html";
+            request.SendChunked = true;
+
+            
+      
+            string[] requestBodyChunks = { @"<html><body>First chunk", @"Second chunk</body><html>"};
+            
+            using (var requestStream = request.GetRequestStream())
+            {
+                for (int i = 0; i < requestBodyChunks.Length; i++)
+                {
+                    var requestBodyBytes = new ASCIIEncoding().GetBytes(requestBodyChunks[i]);
+                    requestStream.Write(requestBodyBytes, 0, requestBodyBytes.Length);
+                }
+                    
+            }
+
+            using (var response = request.GetResponse())
+            {
+                Console.WriteLine(response.ToString());
+            }
+        }
     }
 }

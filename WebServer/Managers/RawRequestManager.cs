@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -131,7 +132,7 @@ namespace WebServer.Managers
         private bool ReadRequestLine()
         {
             byte[] lineBytes;
-            if (!ReadLine(out lineBytes)) return false;
+            if (!ReadLine(ref _unprocessedBytes, out lineBytes)) return false;
 
             _currentRequest.AddRequestLine(lineBytes);
 
@@ -142,7 +143,7 @@ namespace WebServer.Managers
         private bool ReadRequestHeader()
         {
             byte[] lineBytes;
-            if (!ReadLine(out lineBytes)) return false;
+            if (!ReadLine(ref _unprocessedBytes, out lineBytes)) return false;
 
             
 
@@ -160,39 +161,74 @@ namespace WebServer.Managers
 
         private bool ReadRequestBody()
         {
-            byte[] lineBytes;
-            if (!ReadBytes(_currentRequest.ContentLength, out lineBytes)) return false;
+            byte[] bodyBytes=null;
 
-            _currentRequest.AddBody(lineBytes);
+            if(_currentRequest.IsChunkedTransferEncoding)
+            {
+                if (!ReadChunkedBytes(ref _unprocessedBytes, out bodyBytes)) return false;
+                
+            }
+            else if(_currentRequest.ContentLength.HasValue)
+            {
+                if (!ReadBytes(ref _unprocessedBytes, _currentRequest.ContentLength.Value, out bodyBytes)) return false;
+            }
+
+            _currentRequest.AddBody(bodyBytes);
             _httpParserState = HttpParserState.RequestReceived;
             return true;
         }
 
-        private bool ReadLine(out byte[] lineBytes)
+        private static bool ReadChunkedBytes(ref byte[] unprocessedBytes, out byte[] bodyBytes)
+        {
+            bodyBytes = new byte[0];
+            var currentUnprocessedBytes = unprocessedBytes;
+            byte[] chunkBytes;
+            do
+            {
+
+                byte[] lineBytes;
+                if (!ReadLine(ref currentUnprocessedBytes, out lineBytes)) return false;
+                var chunkSizeString = new ASCIIEncoding().GetString(lineBytes);
+                int chunkSize = int.Parse(chunkSizeString, NumberStyles.HexNumber);
+
+                if (!ReadBytes(ref currentUnprocessedBytes, chunkSize, out chunkBytes)) return false;
+                bodyBytes = bodyBytes.Concat(chunkBytes).ToArray();
+
+                // eat the ending CRLF
+                if (!ReadLine(ref currentUnprocessedBytes, out lineBytes)) return false;
+                if(lineBytes.Length > 0) throw new Exception("Bad Format");
+            } while (chunkBytes.Length > 0);
+
+            unprocessedBytes = currentUnprocessedBytes;
+            return true;
+
+        }
+
+        private static bool ReadLine(ref byte[] unprocessedBytes, out byte[] lineBytes)
         {
             lineBytes = null;
 
-            int lineLength = FindCRLF(_unprocessedBytes);
+            int lineLength = FindCRLF(unprocessedBytes);
             if (lineLength < 0)
                 return false;
             
-            lineBytes = _unprocessedBytes.Take(lineLength).ToArray();
+            lineBytes = unprocessedBytes.Take(lineLength).ToArray();
 
-            _unprocessedBytes = _unprocessedBytes.Skip(lineLength + 2).ToArray();
+            unprocessedBytes = unprocessedBytes.Skip(lineLength + 2).ToArray();
 
             return true;
         }
 
-        private bool ReadBytes(int numberOfBytes, out byte[] lineBytes)
+        private static bool ReadBytes(ref byte[] unprocessedBytes, int numberOfBytes, out byte[] lineBytes)
         {
             lineBytes = null;
 
-            if (numberOfBytes > _unprocessedBytes.Length)
+            if (numberOfBytes > unprocessedBytes.Length)
                 return false;
 
-            lineBytes = _unprocessedBytes.Take(numberOfBytes).ToArray();
+            lineBytes = unprocessedBytes.Take(numberOfBytes).ToArray();
 
-            _unprocessedBytes = _unprocessedBytes.Skip(numberOfBytes).ToArray();
+            unprocessedBytes = unprocessedBytes.Skip(numberOfBytes).ToArray();
 
             return true;
         }

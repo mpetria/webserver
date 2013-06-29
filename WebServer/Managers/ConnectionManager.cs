@@ -65,9 +65,11 @@ namespace WebServer.Managers
 
         void SendBytesToClient(NetworkStream clientStream, byte[] responseBytes)
         {
+            _logger.Log("Bytes Sent", responseBytes);
+
             clientStream.Write(responseBytes, 0, responseBytes.Length);
             clientStream.Flush();
-            _logger.Log("Bytes Sent", responseBytes);
+            
         }
 
         public void ManageBytes(byte[] bytes)
