@@ -21,7 +21,7 @@ namespace WebServer.Entities
         public Stream BodyStream { get; set; }
         public string ContentType { get; set; }
 
-        public ResponseStatusCode StatusCode { get; set; }
+        public HttpStatusCode StatusCode { get; set; }
         public string StatusDescription { get; set; }
         public DateTime? LastModified { get; set; }
 

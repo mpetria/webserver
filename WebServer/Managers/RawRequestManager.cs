@@ -13,11 +13,12 @@ namespace WebServer.Managers
 {
     public enum HttpParserState
     {
-        ExpectRequestLine,
-        ExpectRequestHeader,
-        ExpectRequestBody,
-        RequestReceived,
-        RequestDelivered
+        ReadRequestLine,
+        ReadRequestHeader,
+        ReadRequestBody,
+        DeliverRequestExpectation,
+        DeliverRequest,
+        RequestCompleted
     }
 
     public class SpecialBytes
@@ -69,7 +70,7 @@ namespace WebServer.Managers
             }
             catch(Exception ex)
             {
-                var internalServerError = RawResponse.BuildRawResponse(ResponseStatusCode.InternalServerError);
+                var internalServerError = RawResponse.BuildRawResponse(HttpStatusCode.InternalServerError);
                 InitializeNewRequest();
                 _responseManager.ManageBytes(internalServerError.ResponseBytes);
             }
@@ -82,19 +83,22 @@ namespace WebServer.Managers
             {
                 switch (_httpParserState)
                 {
-                    case HttpParserState.ExpectRequestLine:
+                    case HttpParserState.ReadRequestLine:
                         continueReading = ReadRequestLine();
                         break;
-                    case HttpParserState.ExpectRequestHeader:
+                    case HttpParserState.ReadRequestHeader:
                         continueReading = ReadRequestHeader();
                         break;
-                    case HttpParserState.ExpectRequestBody:
+                    case HttpParserState.ReadRequestBody:
                         continueReading = ReadRequestBody();
                         break;
-                    case HttpParserState.RequestReceived:
-                        continueReading = DeliverRequestToHandler();
+                    case HttpParserState.DeliverRequestExpectation:
+                        continueReading = DeliverRequestExpectation();
                         break;
-                    case HttpParserState.RequestDelivered:
+                    case HttpParserState.DeliverRequest:
+                        continueReading = DeliverRequest();
+                        break;
+                    case HttpParserState.RequestCompleted:
                         continueReading = InitializeNewRequest();
                         break;
                     default:
@@ -106,11 +110,11 @@ namespace WebServer.Managers
         private bool InitializeNewRequest()
         {
             _currentRequest = new RawRequest();
-            _httpParserState = HttpParserState.ExpectRequestLine;
+            _httpParserState = HttpParserState.ReadRequestLine;
             return true;
         }
 
-        private bool DeliverRequestToHandler()
+        private bool DeliverRequest()
         {
 
             var requestManager = new RequestManager();
@@ -124,7 +128,28 @@ namespace WebServer.Managers
               _responseManager.ManageStream(rawResponse.ResponseStream);
             }
 
-            _httpParserState = HttpParserState.RequestDelivered;
+            _httpParserState = HttpParserState.RequestCompleted;
+            return true;
+
+        }
+
+        private bool DeliverRequestExpectation()
+        {
+            var requestManager = new RequestManager();
+            bool shouldContinue;
+            RawResponse rawResponse = requestManager.ProceesRequestExpectation(_currentRequest, out shouldContinue);
+
+            _responseManager.ManageBytes(rawResponse.ResponseBytes);
+            
+            if (shouldContinue)
+            {
+                _httpParserState = HttpParserState.ReadRequestBody;
+            }
+            else
+            {
+                _httpParserState = HttpParserState.RequestCompleted;
+            }
+            
             return true;
 
         }
@@ -136,7 +161,7 @@ namespace WebServer.Managers
 
             _currentRequest.AddRequestLine(lineBytes);
 
-            _httpParserState = HttpParserState.ExpectRequestHeader;
+            _httpParserState = HttpParserState.ReadRequestHeader;
             return true;
         }
 
@@ -153,7 +178,16 @@ namespace WebServer.Managers
             }
             else
             {
-                _httpParserState = HttpParserState.ExpectRequestBody;
+
+                if (_currentRequest.Expects100Continue)
+                {
+                    _httpParserState = HttpParserState.DeliverRequestExpectation;
+                }
+                else
+                {
+                    _httpParserState = HttpParserState.ReadRequestBody;
+                }
+                
             }
 
             return true;
@@ -163,6 +197,7 @@ namespace WebServer.Managers
         {
             byte[] bodyBytes=null;
 
+           
             if(_currentRequest.IsChunkedTransferEncoding)
             {
                 if (!ReadChunkedBytes(ref _unprocessedBytes, out bodyBytes)) return false;
@@ -174,7 +209,7 @@ namespace WebServer.Managers
             }
 
             _currentRequest.AddBody(bodyBytes);
-            _httpParserState = HttpParserState.RequestReceived;
+            _httpParserState = HttpParserState.DeliverRequest;
             return true;
         }
 

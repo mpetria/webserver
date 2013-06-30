@@ -15,9 +15,9 @@ namespace WebServer.Entities
 
         private ASCIIEncoding _asciiEncoding = new ASCIIEncoding();
 
-        public void AddStatusCode(ResponseStatusCode statusCode)
+        public void AddStatusCode(HttpStatusCode statusCode)
         {
-            var statusDescription = ResponseStatusDescription.DefaultDescriptions[statusCode];
+            var statusDescription = HttpStatusDescription.DefaultDescriptions[statusCode];
             ResponseString = String.Format("HTTP/1.1 {0} {1}", (int) statusCode, statusDescription);
             AddEndLine();
         }
@@ -84,7 +84,7 @@ namespace WebServer.Entities
                 bodyBytes = response.BodyBytes;
             }
 
-            if(response.StatusCode == ResponseStatusCode.Continue || response.StatusCode == ResponseStatusCode.NoContent || response.StatusCode == ResponseStatusCode.NotModified)
+            if(response.StatusCode == HttpStatusCode.Continue || response.StatusCode == HttpStatusCode.NoContent || response.StatusCode == HttpStatusCode.NotModified)
             {
                 if(bodyBytes != null)
                     throw new Exception("Body not allowed for this response code");
@@ -113,7 +113,7 @@ namespace WebServer.Entities
             return raw;
         }
 
-        public static RawResponse BuildRawResponse(ResponseStatusCode statusCode)
+        public static RawResponse BuildRawResponse(HttpStatusCode statusCode)
         {
             return BuildRawResponse(new Response() {StatusCode = statusCode});
         }

@@ -46,12 +46,12 @@
   <ItemGroup>
     <Compile Include="Config\ServerConfig.cs" />
     <Compile Include="Entities\HttpHeader.cs" />
-    <Compile Include="Entities\HTTPMethod.cs" />
+    <Compile Include="Entities\HttpMethod.cs" />
     <Compile Include="Entities\RawRequest.cs" />
     <Compile Include="Entities\RawResponse.cs" />
     <Compile Include="Entities\Request.cs" />
     <Compile Include="Entities\Response.cs" />
-    <Compile Include="Entities\ResponseStatusCode.cs" />
+    <Compile Include="Entities\HttpStatusCode.cs" />
     <Compile Include="Handlers\FolderResourceHandler.cs" />
     <Compile Include="Handlers\FsResourceHandler.cs" />
     <Compile Include="Handlers\IResourceHandler.cs" />

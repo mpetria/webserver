@@ -24,7 +24,7 @@ namespace WebServer.Handlers
 
         override public IList<string> GetAllowedMethods(string resourceUri)
         {
-            return new List<string>(){ HTTPMethod.GET, HTTPMethod.HEAD };
+            return new List<string>(){ HttpMethod.GET, HttpMethod.HEAD };
         }
 
         private const string HtmlTemplate = @"<html><body>{0}</body></html>";

@@ -5,7 +5,7 @@ using System.Text;
 
 namespace WebServer.Entities
 {
-    public class HTTPMethod
+    public class HttpMethod
     {
         public const string OPTIONS = "OPTIONS";
         public const string GET = "GET";

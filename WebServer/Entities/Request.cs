@@ -42,14 +42,14 @@ namespace WebServer.Entities
         {
             if (Host == null)
                 return false;
-            if (Method != HTTPMethod.TRACE 
-                && Method != HTTPMethod.PUT 
-                && Method != HTTPMethod.POST 
-                && Method != HTTPMethod.OPTIONS 
-                && Method != HTTPMethod.HEAD 
-                && Method != HTTPMethod.GET 
-                && Method != HTTPMethod.DELETE 
-                && Method != HTTPMethod.CONNECT)
+            if (Method != HttpMethod.TRACE 
+                && Method != HttpMethod.PUT 
+                && Method != HttpMethod.POST 
+                && Method != HttpMethod.OPTIONS 
+                && Method != HttpMethod.HEAD 
+                && Method != HttpMethod.GET 
+                && Method != HttpMethod.DELETE 
+                && Method != HttpMethod.CONNECT)
                 return false;
 
             return true;

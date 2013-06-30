@@ -14,6 +14,7 @@ namespace WebServer.Entities
         public byte[] Body { get; set; }
         public int? ContentLength { get; set; }
         public bool IsChunkedTransferEncoding { get; set; }
+        public bool Expects100Continue { get; set; }
 
         private ASCIIEncoding _asciiEncoding = new ASCIIEncoding();
 
@@ -38,6 +39,11 @@ namespace WebServer.Entities
             {
                 IsChunkedTransferEncoding = true;
             }
+            else if (key == HttpHeader.Expect && value == "100-continue")
+            {
+                Expects100Continue = true;
+            }
+           
 
         }
 

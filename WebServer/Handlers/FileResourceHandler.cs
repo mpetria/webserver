@@ -28,7 +28,7 @@ namespace WebServer.Handlers
 
         override public IList<string> GetAllowedMethods(string resourceUri)
         {
-            return new List<string>() { HTTPMethod.GET, HTTPMethod.HEAD, HTTPMethod.PUT };
+            return new List<string>() { HttpMethod.GET, HttpMethod.HEAD, HttpMethod.PUT };
         }
 
         override public IList<string> GetAllowedMediaTypes(string resourceUri, string method)
