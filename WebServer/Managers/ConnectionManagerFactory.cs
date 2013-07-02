@@ -3,7 +3,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net.Sockets;
 using System.Text;
-using WebServer.Utils.Logging;
+using WebServer.Config;
+using WebServer.Utils;
+
 
 namespace WebServer.Managers
 {
@@ -12,9 +14,17 @@ namespace WebServer.Managers
         public static IConnectionManager CreateInstance(TcpClient tcpClient)
         {
             var connectionId = Guid.NewGuid().ToString();
-            var logger = new ConnectionLogger(connectionId);
-            var rawRequestmanager = new RawRequestManager(logger);
-            var connectionManager = new ConnectionManager(tcpClient, logger);
+            var connectionLogger = new Logger(String.Format("[ConnectionID {0}]", connectionId));
+            Func<IRequestManager> requestManagerFactory = () =>
+                                            {
+                                                var requestId = Guid.NewGuid().ToString();
+                                                var requestLogger = new Logger(String.Format("[ConnectionID {0}][RequestID {1}]", connectionId, requestId));
+                                                return new RequestManager(ServerConfig.Instance, requestLogger);
+                                            };
+
+
+            var rawRequestmanager = new RawRequestManager(connectionLogger, requestManagerFactory);
+            var connectionManager = new ConnectionManager(tcpClient, connectionLogger);
             rawRequestmanager.SetLinkedDataManager(connectionManager);
             connectionManager.SetLinkedDataManager(rawRequestmanager);
 

@@ -4,14 +4,14 @@ using System.IO;
 using System.Linq;
 using System.Net.Sockets;
 using System.Text;
-using WebServer.Utils.Logging;
+using WebServer.Utils;
+
 
 namespace WebServer.Managers
 {
     public class ConnectionManager : IConnectionManager, IDataManager
     {
         private readonly TcpClient _tcpClient;
-        private readonly string _connectionId;
         private readonly ILogger _logger;
         private readonly NetworkStream _clientStream;
         private IDataManager _requestManager;

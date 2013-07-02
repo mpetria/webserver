@@ -16,13 +16,16 @@ namespace WebServer.Entities
         public bool IsChunkedTransferEncoding { get; set; }
         public bool Expects100Continue { get; set; }
 
-        private ASCIIEncoding _asciiEncoding = new ASCIIEncoding();
+        private readonly ASCIIEncoding _asciiEncoding = new ASCIIEncoding();
+
+
+        public RawRequest()
+        {
+            HeaderLines = new List<string>();
+        }
 
         public void AddHeaderLine(byte[] headerLineBytes)
         {
-            if(HeaderLines == null) 
-                HeaderLines = new List<string>();
-
             string headerLine = _asciiEncoding.GetString(headerLineBytes);
             HeaderLines.Add(headerLine);
 
@@ -43,8 +46,6 @@ namespace WebServer.Entities
             {
                 Expects100Continue = true;
             }
-           
-
         }
 
         public void AddRequestLine(byte[] requestLineBytes)
@@ -61,12 +62,12 @@ namespace WebServer.Entities
         {
             string method;
             string uri;
-            string authority;
+            string version;
 
-            RequestParser.ParseRequestLine(rawRequest.RequestLine, out method, out uri, out authority);
-            
+            RequestParser.ParseRequestLine(rawRequest.RequestLine, out method, out uri, out version);
+          
 
-            var request = new Request() {Method = method, Uri = uri};
+            var request = new Request() {Method = method};
 
 
             foreach (var headerLine in rawRequest.HeaderLines)
@@ -74,6 +75,24 @@ namespace WebServer.Entities
                 string key, value;
                 RequestParser.ParseHeaderLine(headerLine, out key, out value);
                 request.AddHeader(key, value);
+            }
+
+
+            /*
+               1. If Request-URI is an absoluteURI, the host is part of the Request-URI. Any Host header field value in the request MUST be ignored.
+               2. If the Request-URI is not an absoluteURI, and the request includes a Host header field, the host is determined by the Host header field value.
+               3. If the host as determined by rule 1 or 2 is not a valid host on the server, the response MUST be a 400 (Bad Request) error message.  
+            */
+            if(Uri.IsWellFormedUriString(uri, UriKind.Absolute))
+            {
+                var tempUri = new Uri(uri, UriKind.Absolute);
+                request.UriPath = tempUri.AbsolutePath;
+                request.Host = tempUri.Host;
+            }
+            else if (Uri.IsWellFormedUriString(uri, UriKind.Relative))
+            {
+                request.UriPath = uri;
+                request.Host = request.GetHeaderValue(HttpHeader.Host);
             }
 
             request.Body = rawRequest.Body;

@@ -9,19 +9,19 @@ namespace WebServer.Utils
     public static class RequestParser
     {
 
-        static Regex _requestLineRegex = new Regex(@"(?<method>[^\s]+)\s+(?<uri>[^\s]+)\s+(?<authority>[^\s]+)");
+        static Regex _requestLineRegex = new Regex(@"(?<method>[^\s]+)\s+(?<uri>[^\s]+)\s+(?<version>[^\s]+)");
         static Regex _headerLineRegex = new Regex(@"(?<key>[^:]+):(?<value>.+)");
 
-        public static bool ParseRequestLine(string requestLine, out string method, out string uri, out string authority)
+        public static bool ParseRequestLine(string requestLine, out string method, out string uri, out string version)
         {
             var match = _requestLineRegex.Match(requestLine);
 
-            method = uri = authority = null;
+            method = uri = version = null;
             if (!match.Success) return false;
 
             method = match.Groups["method"].Value;
             uri = match.Groups["uri"].Value;
-            authority = match.Groups["authority"].Value;
+            version = match.Groups["version"].Value;
 
             return true;
 

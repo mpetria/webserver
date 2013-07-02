@@ -1,75 +1,48 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
+
 using WebServer.Config;
 using WebServer.Entities;
 using WebServer.Handlers;
 using WebServer.Utils;
-using WebServer.Utils.Logging;
+
 
 namespace WebServer.Managers
 {
-    public class RequestManager
+    public class RequestManager : IRequestManager
     {
-        private readonly ILogger _logger;
-        private readonly string _requestId;
         private readonly ServerConfig _serverConfig;
+        private readonly ILogger _logger;
 
-        public RequestManager()
+        public RequestManager(ServerConfig serverConfig, ILogger logger)
         {
-            _requestId = Guid.NewGuid().ToString();
-            _logger = new RequestLogger("connection", _requestId);
-            _serverConfig = ServerConfig.Instance;
+            _serverConfig = serverConfig;
+            _logger = logger;
         }
 
-        public RawResponse ProceesRequestExpectation(RawRequest rawRequest, out bool shouldContinue)
+
+        public Response ProceesRequest(Request request, bool processExpectation = false)
         {
-            _logger.Log("New Request Expectation", rawRequest.RequestLine);
+            _logger.Log("Request", String.Format("Method: {0} Host: {1} UriPath: {2}", request.Method, request.Host, request.UriPath));
 
-            var request = RawRequest.BuildRequest(rawRequest);
-            var response = InnerProceesRequest(request, processBody: false);
-            if(response.StatusCode.IsSuccessCode())
-            {
-                response = new Response() {StatusCode = HttpStatusCode.Continue};
-                shouldContinue = true;
+            var response = InnerProceesRequest(request, processExpectation);
 
-            }
-            else
-            {
-                shouldContinue = false;
-            }
+            _logger.Log("Response", response.StatusCode.ToString());
 
-            var rawResponse = RawResponse.BuildRawResponse(response);
-
-            _logger.Log("New Response Expectation", response.StatusCode.ToString());
-
-            return rawResponse;
+            return response;
         }
 
-        public RawResponse ProceesRequest(RawRequest rawRequest)
-        {
-            _logger.Log("New Request", rawRequest.RequestLine);
 
-            var request = RawRequest.BuildRequest(rawRequest);
-            var response = InnerProceesRequest(request);
-            var rawResponse = RawResponse.BuildRawResponse(response);
-
-            _logger.Log("New Response", response.StatusCode.ToString());
-
-            return rawResponse;
-        }
-
-        private Response InnerProceesRequest(Request request, bool processBody = true)
+        public Response InnerProceesRequest(Request request, bool processExpectation)
         {
             var response = new Response();
             bool returnResponse = false;
 
-
             returnResponse = ValidateRequest(request, response);
             if (returnResponse) return response;
 
-            var handler = _serverConfig.GetHandlerForPath(request.Uri);
+            var handler = _serverConfig.GetHandlerForPath(request.Host, request.UriPath);
 
             returnResponse = CheckIfMethodIsAllowed(handler, request, response);
             if (returnResponse) return response;
@@ -84,7 +57,7 @@ namespace WebServer.Managers
             if (returnResponse) return response;
 
 
-            if (processBody)
+            if (!processExpectation) // do not process the body if processing an expectation
             {
                 returnResponse = ProcessBody(handler, request, response);
                 if (returnResponse) return response;
@@ -102,7 +75,7 @@ namespace WebServer.Managers
         {
             if(request.Method == HttpMethod.PUT)
             {
-                var created = handler.CreateOrUpdateResource(request.Uri, request.GetHeaderValue(HttpHeader.ContentType), request.Body);
+                var created = handler.CreateOrUpdateResource(request.UriPath, request.GetHeaderValue(HttpHeader.ContentType), request.Body);
                 if(created)
                 {
                     response.StatusCode = HttpStatusCode.Created;
@@ -118,13 +91,13 @@ namespace WebServer.Managers
 
         public bool ValidateRequest(Request request, Response response)
         {
-            if (!request.IsValid())
+            if (!request.IsValid() || !_serverConfig.IsSupportedHost(request.Host))
             {
                 response.StatusCode = HttpStatusCode.BadRequest;
                 return true;
             }
 
-            if(request.Uri.Length > _serverConfig.MaxUriLength)
+            if(request.UriPath.Length > _serverConfig.MaxUriLength)
             {
                 response.StatusCode = HttpStatusCode.RequestURITooLong;
                 return true;
@@ -137,7 +110,7 @@ namespace WebServer.Managers
         {
             if(request.Method == HttpMethod.HEAD || request.Method == HttpMethod.GET)
             {
-                if (!handler.CheckIfExists(request.Uri))
+                if (!handler.CheckIfExists(request.UriPath))
                 {
                     response.StatusCode = HttpStatusCode.NotFound;
                     return true;
@@ -149,7 +122,7 @@ namespace WebServer.Managers
 
         public bool CheckIfMethodIsAllowed(IResourceHandler handler, Request request, Response response)
         {
-            var allowedMethods = handler.GetAllowedMethods(request.Uri);
+            var allowedMethods = handler.GetAllowedMethods(request.UriPath);
             if (!allowedMethods.Contains(request.Method))
             {
                 response.StatusCode = HttpStatusCode.MethodNotAllowed;
@@ -162,7 +135,7 @@ namespace WebServer.Managers
 
         public bool CheckIfMediaTypeIsAllowed(IResourceHandler handler, Request request, Response response)
         {
-            var allowedMediaTypes = handler.GetAllowedMediaTypes(request.Uri, request.Method);
+            var allowedMediaTypes = handler.GetAllowedMediaTypes(request.UriPath, request.Method);
             var contentType = request.GetHeaderValue(HttpHeader.ContentType);
             if (contentType != null && !allowedMediaTypes.Contains(contentType))
             {
@@ -177,14 +150,21 @@ namespace WebServer.Managers
         {
             string lastModifiedDate, eTag;
 
-            handler.GetVersioning(request.Uri, out lastModifiedDate, out eTag);
+            handler.GetVersioning(request.UriPath, out lastModifiedDate, out eTag);
             response.Headers.Add(HttpHeader.LastModified, lastModifiedDate);
             response.Headers.Add(HttpHeader.ETag, eTag);
 
             var headerIfModifiedSince = request.GetHeaderValue(HttpHeader.IfModifiedSince);
-            if (headerIfModifiedSince != null && lastModifiedDate == headerIfModifiedSince)
+            if (headerIfModifiedSince != null && DateUtils.CheckIfDatesMatch(lastModifiedDate, headerIfModifiedSince))
             {
                 response.StatusCode = HttpStatusCode.NotModified;
+                return true;
+            }
+
+            var headerIfUnodifiedSince = request.GetHeaderValue(HttpHeader.IfUnmodifiedSince);
+            if (headerIfUnodifiedSince != null && DateUtils.CheckIfDatesMatch(lastModifiedDate, headerIfUnodifiedSince))
+            {
+                response.StatusCode = HttpStatusCode.PreconditionFailed;
                 return true;
             }
 
@@ -193,7 +173,7 @@ namespace WebServer.Managers
 
         public bool ProduceBody(IResourceHandler handler, Request request, Response response)
         {
-            var availableMediaTypes = handler.GetAvailableMediaTypes(request.Uri, request.Method);
+            var availableMediaTypes = handler.GetAvailableMediaTypes(request.UriPath, request.Method);
 
             // check accept headers
 
@@ -202,7 +182,7 @@ namespace WebServer.Managers
 
             if (request.Method == HttpMethod.HEAD)
             {
-                var length = handler.GetResourceLength(request.Uri, chosenMediaType);
+                var length = handler.GetResourceLength(request.UriPath, chosenMediaType);
                 response.Headers[HttpHeader.ContentLength] = length.ToString();
                 response.SuppressBody = true;
             }
@@ -210,13 +190,13 @@ namespace WebServer.Managers
             {
                 if(_serverConfig.UseStreams)
                 {
-                    var length = handler.GetResourceLength(request.Uri, chosenMediaType);
+                    var length = handler.GetResourceLength(request.UriPath, chosenMediaType);
                     response.Headers[HttpHeader.ContentLength] = length.ToString();
-                    response.BodyStream = handler.GetResourceStream(request.Uri, chosenMediaType);
+                    response.BodyStream = handler.GetResourceStream(request.UriPath, chosenMediaType);
                 }
                 else
                 {
-                    var fileContent = handler.GetResourceBytes(request.Uri, chosenMediaType);
+                    var fileContent = handler.GetResourceBytes(request.UriPath, chosenMediaType);
                     response.BodyBytes = fileContent;
                 }
                 

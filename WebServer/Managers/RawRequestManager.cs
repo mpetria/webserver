@@ -4,10 +4,9 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
-using WebServer.Config;
 using WebServer.Entities;
-using WebServer.Handlers;
-using WebServer.Utils.Logging;
+using WebServer.Utils;
+
 
 namespace WebServer.Managers
 {
@@ -32,19 +31,20 @@ namespace WebServer.Managers
     public class RawRequestManager : IDataManager
     {
         private readonly ILogger _logger;
+        private readonly Func<IRequestManager> _requestManagerFactory;
         private IDataManager _responseManager;
         private byte[] _unprocessedBytes;
 
         private HttpParserState _httpParserState;
         private RawRequest _currentRequest;
 
-        public  RawRequestManager(ILogger logger)
+        public  RawRequestManager(ILogger logger, Func<IRequestManager> requestManagerFactory)
         {
             _logger = logger;
+            _requestManagerFactory = requestManagerFactory;
             _unprocessedBytes = new byte[0];
             
             InitializeNewRequest();
-            
         }
 
 
@@ -117,11 +117,12 @@ namespace WebServer.Managers
         private bool DeliverRequest()
         {
 
-            var requestManager = new RequestManager();
-            var rawResponse = requestManager.ProceesRequest(_currentRequest);
+            var requestManager = _requestManagerFactory();
 
-            
-            
+            var request = RawRequest.BuildRequest(_currentRequest);
+            var response = requestManager.ProceesRequest(request);
+
+            var rawResponse = RawResponse.BuildRawResponse(response);
             _responseManager.ManageBytes(rawResponse.ResponseBytes);
             if(rawResponse.ResponseStream != null)
             {
@@ -135,13 +136,21 @@ namespace WebServer.Managers
 
         private bool DeliverRequestExpectation()
         {
-            var requestManager = new RequestManager();
-            bool shouldContinue;
-            RawResponse rawResponse = requestManager.ProceesRequestExpectation(_currentRequest, out shouldContinue);
+            var requestManager = _requestManagerFactory();
+
+            var request = RawRequest.BuildRequest(_currentRequest);
+            var response = requestManager.ProceesRequest(request, processExpectation : true);
+            if (response.StatusCode.IsSuccessCode())
+            {
+                response = new Response() { StatusCode = HttpStatusCode.Continue };
+            }
+           
+
+            var rawResponse = RawResponse.BuildRawResponse(response);
 
             _responseManager.ManageBytes(rawResponse.ResponseBytes);
             
-            if (shouldContinue)
+            if (response.StatusCode == HttpStatusCode.Continue)
             {
                 _httpParserState = HttpParserState.ReadRequestBody;
             }

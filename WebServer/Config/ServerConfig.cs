@@ -43,7 +43,7 @@ namespace WebServer.Config
         public string Host { get; set; }
         
 
-        public IResourceHandler GetHandlerForPath(string path)
+        public IResourceHandler GetHandlerForPath(string host, string path)
         {
             if(!Path.HasExtension(path))
             {
@@ -63,6 +63,12 @@ namespace WebServer.Config
         public int MaxUriLength = 512;
 
         public bool UseStreams = false;
+
+
+        public bool IsSupportedHost(string host)
+        {
+            return true;
+        }
 
 
 

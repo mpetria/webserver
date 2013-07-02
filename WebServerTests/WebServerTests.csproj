@@ -45,6 +45,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Integration\SimpleRequestTests.cs" />
+    <Compile Include="Unit\RawRequestTests.cs" />
     <Compile Include="Unit\RequestParserTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

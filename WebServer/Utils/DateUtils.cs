@@ -13,9 +13,9 @@ namespace WebServer.Utils
             return dateTime.ToUniversalTime().ToString("r");
         }
 
-        public static bool CheckIfDatesMatch(DateTime dateTime, string headerDate)
+        public static bool CheckIfDatesMatch(string serverDate, string clientHeaderDate)
         {
-            return GetFormatedServerDate(dateTime) == headerDate;
+            return clientHeaderDate == serverDate;
         }
     }
 }
