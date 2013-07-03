@@ -45,17 +45,17 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Config\ServerConfig.cs" />
-    <Compile Include="Entities\HttpHeader.cs" />
-    <Compile Include="Entities\HttpMethod.cs" />
-    <Compile Include="Entities\RawRequest.cs" />
-    <Compile Include="Entities\RawResponse.cs" />
-    <Compile Include="Entities\Request.cs" />
-    <Compile Include="Entities\Response.cs" />
-    <Compile Include="Entities\HttpStatusCode.cs" />
-    <Compile Include="Handlers\FolderResourceHandler.cs" />
-    <Compile Include="Handlers\FsResourceHandler.cs" />
-    <Compile Include="Handlers\IResourceHandler.cs" />
-    <Compile Include="Handlers\FileResourceHandler.cs" />
+    <Compile Include="Data\HttpHeader.cs" />
+    <Compile Include="Data\HttpMethod.cs" />
+    <Compile Include="Data\RawRequest.cs" />
+    <Compile Include="Data\RawResponse.cs" />
+    <Compile Include="Data\Request.cs" />
+    <Compile Include="Data\Response.cs" />
+    <Compile Include="Data\HttpStatusCode.cs" />
+    <Compile Include="ResourceHandlers\FolderResourceHandler.cs" />
+    <Compile Include="ResourceHandlers\FsResourceHandler.cs" />
+    <Compile Include="ResourceHandlers\IResourceHandler.cs" />
+    <Compile Include="ResourceHandlers\FileResourceHandler.cs" />
     <Compile Include="Managers\ConnectionManager.cs" />
     <Compile Include="Managers\ConnectionManagerFactory.cs" />
     <Compile Include="Managers\IConnectionManager.cs" />

@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using WebServer.Config;
 
-namespace WebServer.Handlers
+namespace WebServer.ResourceHandlers
 {
     public class FsResourceHandler : IResourceHandler
     {

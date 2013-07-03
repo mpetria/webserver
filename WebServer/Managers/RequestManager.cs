@@ -3,8 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 
 using WebServer.Config;
-using WebServer.Entities;
-using WebServer.Handlers;
+using WebServer.Data;
+using WebServer.ResourceHandlers;
 using WebServer.Utils;
 
 
@@ -151,18 +151,22 @@ namespace WebServer.Managers
             string lastModifiedDate, eTag;
 
             handler.GetVersioning(request.UriPath, out lastModifiedDate, out eTag);
-            response.Headers.Add(HttpHeader.LastModified, lastModifiedDate);
-            response.Headers.Add(HttpHeader.ETag, eTag);
+
+            if(lastModifiedDate != null)
+                response.Headers.Add(HttpHeader.LastModified, lastModifiedDate);
+
+            if(eTag != null)
+                response.Headers.Add(HttpHeader.ETag, eTag);
 
             var headerIfModifiedSince = request.GetHeaderValue(HttpHeader.IfModifiedSince);
-            if (headerIfModifiedSince != null && DateUtils.CheckIfDatesMatch(lastModifiedDate, headerIfModifiedSince))
+            if (headerIfModifiedSince != null && DateUtils.CheckIfHttpDatesMatch(lastModifiedDate, headerIfModifiedSince))
             {
                 response.StatusCode = HttpStatusCode.NotModified;
                 return true;
             }
 
             var headerIfUnodifiedSince = request.GetHeaderValue(HttpHeader.IfUnmodifiedSince);
-            if (headerIfUnodifiedSince != null && DateUtils.CheckIfDatesMatch(lastModifiedDate, headerIfUnodifiedSince))
+            if (headerIfUnodifiedSince != null && DateUtils.CheckIfHttpDatesMatch(lastModifiedDate, headerIfUnodifiedSince))
             {
                 response.StatusCode = HttpStatusCode.PreconditionFailed;
                 return true;

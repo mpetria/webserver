@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using WebServer.Utils;
 
-namespace WebServer.Entities
+namespace WebServer.Data
 {
     public class RawResponse
     {
@@ -24,7 +24,7 @@ namespace WebServer.Entities
 
         public void AddDateHeader(string key, DateTime dateTime)
         {
-            var dateString = DateUtils.GetFormatedServerDate(dateTime);
+            var dateString = DateUtils.GetFormatedHttpDateFromUtcDate(dateTime);
             AddHeader(key, dateString);
         }
       
@@ -58,7 +58,7 @@ namespace WebServer.Entities
             raw.AddStatusCode(response.StatusCode);
             
             
-            raw.AddDateHeader(HttpHeader.Date, DateTime.Now);
+            raw.AddDateHeader(HttpHeader.Date, DateTime.UtcNow);
             foreach (var pair in response.Headers)
             {
                 raw.AddHeader(pair.Key, pair.Value);

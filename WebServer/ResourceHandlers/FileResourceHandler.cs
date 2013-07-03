@@ -4,10 +4,10 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using WebServer.Config;
-using WebServer.Entities;
+using WebServer.Data;
 using WebServer.Utils;
 
-namespace WebServer.Handlers
+namespace WebServer.ResourceHandlers
 {
     public class FileResourceHandler : FsResourceHandler
     {
@@ -40,9 +40,9 @@ namespace WebServer.Handlers
         override public bool GetVersioning(string resourceUri, out string lastUpdateDate, out string eTag)
         {
             var filePath = GetPhysicalPath(resourceUri);
-            DateTime lastModifiedDate = File.GetLastWriteTime(filePath);
-            lastUpdateDate = DateUtils.GetFormatedServerDate(lastModifiedDate.ToUniversalTime());
-            eTag = lastUpdateDate.Replace(' ','-');
+            DateTime lastModifiedDate = File.GetLastWriteTimeUtc(filePath);
+            lastUpdateDate = DateUtils.GetFormatedHttpDateFromUtcDate(lastModifiedDate);
+            eTag = null;
             return true;
         }
 

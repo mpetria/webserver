@@ -3,9 +3,10 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
-using WebServer.Entities;
+using WebServer.Data;
+using WebServer.Utils;
 
-namespace WebServer.Handlers
+namespace WebServer.ResourceHandlers
 {
     public class FolderResourceHandler : FsResourceHandler
     {
@@ -49,6 +50,16 @@ namespace WebServer.Handlers
         override public IList<string> GetAvailableMediaTypes(string resourceUri, string method)
         {
             return new List<string>() { "text/html" };
+        }
+
+        override public bool GetVersioning(string resourceUri, out string lastUpdateDate, out string eTag)
+        {
+            eTag = null;
+
+            var physicalPath = GetPhysicalPath(resourceUri);
+            DateTime lastModifiedDate = File.GetLastWriteTimeUtc(physicalPath);
+            lastUpdateDate = DateUtils.GetFormatedHttpDateFromUtcDate(lastModifiedDate);
+            return true;
         }
     }
 }

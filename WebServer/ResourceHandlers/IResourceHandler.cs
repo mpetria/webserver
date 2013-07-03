@@ -3,9 +3,9 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
-using WebServer.Entities;
+using WebServer.Data;
 
-namespace WebServer.Handlers
+namespace WebServer.ResourceHandlers
 {
     public interface IResourceHandler
     {

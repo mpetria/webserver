@@ -5,7 +5,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using WebServer.Utils;
 
-namespace WebServer.Entities
+namespace WebServer.Data
 {
     public class RawRequest
     {

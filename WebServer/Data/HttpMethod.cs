@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-namespace WebServer.Entities
+namespace WebServer.Data
 {
     public class HttpMethod
     {

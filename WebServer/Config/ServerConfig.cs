@@ -4,7 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Text;
-using WebServer.Handlers;
+using WebServer.ResourceHandlers;
 
 namespace WebServer.Config
 {
