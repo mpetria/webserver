@@ -11,9 +11,11 @@ namespace WebServer.ResourceHandlers
 {
     public class FileResourceHandler : FsResourceHandler
     {
-        public FileResourceHandler(string directory) : base(directory)
+        private readonly ServerConfig _serverConfig;
+
+        public FileResourceHandler(string directory, ServerConfig serverConfig) : base(directory)
         {
-         
+            _serverConfig = serverConfig;
         }
 
 

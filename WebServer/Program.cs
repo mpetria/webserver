@@ -11,7 +11,9 @@ namespace WebServer
     {
         static void Main(string[] args)
         {
-            new Server().Start(ServerConfig.Instance.IpAddress, ServerConfig.Instance.Port);
+            var serverConfig = ServerConfigFactory.GetServerConfig();
+
+            new Server().Start(IPAddress.Any, serverConfig.Port);
         }
     }
 }

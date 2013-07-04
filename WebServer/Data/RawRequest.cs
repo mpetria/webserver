@@ -15,6 +15,7 @@ namespace WebServer.Data
         public int? ContentLength { get; set; }
         public bool IsChunkedTransferEncoding { get; set; }
         public bool Expects100Continue { get; set; }
+        public bool CloseConnection { get; set; }
 
         private readonly ASCIIEncoding _asciiEncoding = new ASCIIEncoding();
 
@@ -45,6 +46,10 @@ namespace WebServer.Data
             else if (key == HttpHeader.Expect && value == "100-continue")
             {
                 Expects100Continue = true;
+            }
+            else if (key == HttpHeader.Connection && value == "close")
+            {
+                CloseConnection = true;
             }
         }
 
@@ -86,12 +91,12 @@ namespace WebServer.Data
             if(Uri.IsWellFormedUriString(uri, UriKind.Absolute))
             {
                 var tempUri = new Uri(uri, UriKind.Absolute);
-                request.UriPath = tempUri.AbsolutePath;
+                request.PathAndQuery = tempUri.PathAndQuery;
                 request.Host = tempUri.Host;
             }
             else if (Uri.IsWellFormedUriString(uri, UriKind.Relative))
             {
-                request.UriPath = uri;
+                request.PathAndQuery = uri;
                 request.Host = request.GetHeaderValue(HttpHeader.Host);
             }
 

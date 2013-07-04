@@ -17,8 +17,10 @@ namespace WebServer
         public void Start(IPAddress ipAddress, int port)
         {
             _tcpListener = new TcpListener(ipAddress, port);
-            _tcpListenerThread = new Thread(new ThreadStart(ListenForClients));
+            _tcpListenerThread = new Thread(ListenForClients);
             _tcpListenerThread.Start();
+
+            
         }
 
         public void Stop()
@@ -33,17 +35,13 @@ namespace WebServer
             {
                 //blocks until a client has connected to the server
                 TcpClient client = _tcpListener.AcceptTcpClient();
-                System.Diagnostics.Debug.WriteLine("New Client");
 
-                //create a thread to handle communication 
-                //with connected client
-                Thread clientThread = new Thread(HandleClientCommunication);
-                clientThread.Start(client);
+                ThreadPool.QueueUserWorkItem(HandleClientCommunication, client);
             }
         }
 
 
-        private void HandleClientCommunication(object tcpClientObject)
+        private static void HandleClientCommunication(object tcpClientObject)
         {
             TcpClient tcpClient = tcpClientObject as TcpClient;
 

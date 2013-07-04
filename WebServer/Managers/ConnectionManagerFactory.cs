@@ -15,11 +15,13 @@ namespace WebServer.Managers
         {
             var connectionId = Guid.NewGuid().ToString();
             var connectionLogger = new Logger(String.Format("[ConnectionID {0}]", connectionId));
+
             Func<IRequestManager> requestManagerFactory = () =>
                                             {
                                                 var requestId = Guid.NewGuid().ToString();
                                                 var requestLogger = new Logger(String.Format("[ConnectionID {0}][RequestID {1}]", connectionId, requestId));
-                                                return new RequestManager(ServerConfig.Instance, requestLogger);
+                                                var serverConfig = ServerConfigFactory.GetServerConfig();
+                                                return new RequestManager(serverConfig, requestLogger);
                                             };
 
 

@@ -11,12 +11,11 @@ namespace WebServer.ResourceHandlers
     {
 
         private readonly string _directory;
-        protected readonly ServerConfig _serverConfig;
+
 
         public FsResourceHandler(string directory)
         {
             _directory = directory;
-            _serverConfig = ServerConfig.Instance;
         }
 
         public virtual bool CheckIfExists(string resourceUri)
@@ -67,6 +66,12 @@ namespace WebServer.ResourceHandlers
 
         public string GetPhysicalPath(string requestUri)
         {
+            var queryPosition = requestUri.IndexOf("?");
+            if(queryPosition != -1)
+            {
+                requestUri = requestUri.Substring(0, queryPosition);
+            }
+
             var filePath = Path.Combine(_directory, requestUri.Trim("/".ToCharArray()));
             return filePath;
         }

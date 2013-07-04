@@ -32,11 +32,13 @@ namespace WebServer.Managers
     {
         private readonly ILogger _logger;
         private readonly Func<IRequestManager> _requestManagerFactory;
-        private IDataManager _responseManager;
+        private IDataManager _connectionManager;
         private byte[] _unprocessedBytes;
 
         private HttpParserState _httpParserState;
         private RawRequest _currentRequest;
+
+        private bool _connectionIsClosing = false;
 
         public  RawRequestManager(ILogger logger, Func<IRequestManager> requestManagerFactory)
         {
@@ -48,20 +50,28 @@ namespace WebServer.Managers
         }
 
 
+        public void Close()
+        {
+            _connectionIsClosing = true;
+        }
+
         public void SetLinkedDataManager(IDataManager dataManager)
         {
-            _responseManager = dataManager;
+            _connectionManager = dataManager;
         }
 
 
         public void ManageStream(Stream stream)
         {
+
             
         }
 
 
         public void ManageBytes(byte[] receivedBytes)
         {
+            
+
             _unprocessedBytes = _unprocessedBytes.Concat(receivedBytes).ToArray();
 
             try
@@ -72,7 +82,7 @@ namespace WebServer.Managers
             {
                 var internalServerError = RawResponse.BuildRawResponse(HttpStatusCode.InternalServerError);
                 InitializeNewRequest();
-                _responseManager.ManageBytes(internalServerError.ResponseBytes);
+                _connectionManager.ManageBytes(internalServerError.ResponseBytes);
             }
         }
 
@@ -116,18 +126,13 @@ namespace WebServer.Managers
 
         private bool DeliverRequest()
         {
-
+            _connectionIsClosing = _currentRequest.CloseConnection;
             var requestManager = _requestManagerFactory();
 
             var request = RawRequest.BuildRequest(_currentRequest);
             var response = requestManager.ProceesRequest(request);
 
-            var rawResponse = RawResponse.BuildRawResponse(response);
-            _responseManager.ManageBytes(rawResponse.ResponseBytes);
-            if(rawResponse.ResponseStream != null)
-            {
-              _responseManager.ManageStream(rawResponse.ResponseStream);
-            }
+            SendResponseToConnectionManager(response);
 
             _httpParserState = HttpParserState.RequestCompleted;
             return true;
@@ -144,11 +149,8 @@ namespace WebServer.Managers
             {
                 response = new Response() { StatusCode = HttpStatusCode.Continue };
             }
-           
 
-            var rawResponse = RawResponse.BuildRawResponse(response);
-
-            _responseManager.ManageBytes(rawResponse.ResponseBytes);
+            SendResponseToConnectionManager(response);
             
             if (response.StatusCode == HttpStatusCode.Continue)
             {
@@ -161,6 +163,21 @@ namespace WebServer.Managers
             
             return true;
 
+        }
+
+        private void SendResponseToConnectionManager(Response response)
+        {
+            var rawResponse = RawResponse.BuildRawResponse(response);
+            _connectionManager.ManageBytes(rawResponse.ResponseBytes);
+
+            if (rawResponse.ResponseStream != null)
+            {
+                _connectionManager.ManageStream(rawResponse.ResponseStream);
+            }
+            if(_connectionIsClosing)
+            {
+                _connectionManager.Close();
+            }
         }
 
         private bool ReadRequestLine()

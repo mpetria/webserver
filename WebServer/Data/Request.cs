@@ -14,7 +14,7 @@ namespace WebServer.Data
 
         public string Method { get; set; }
         public string Host { get; set; }
-        public string UriPath { get; set; }
+        public string PathAndQuery { get; set; }
         public byte[] Body { get; set; }
 
         public IDictionary<string, string> Headers { get; private set; }

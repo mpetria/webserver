@@ -12,10 +12,14 @@ namespace WebServerTests.Integration
     [TestFixture]
     public class SimpleRequestTests
     {
+
+        private IPAddress _ipAddress = IPAddress.Loopback;
+        private int _port = 9010;
+
         [Test]
         public void SimpleGet()
         {
-            var serverUri = String.Format("http://{0}:{1}", ServerConfig.Instance.IpAddress, ServerConfig.Instance.Port);
+            var serverUri = String.Format("http://{0}:{1}", _ipAddress, _port);
             var uri = serverUri + "/home.html";
 
             Console.WriteLine(uri);
@@ -32,7 +36,7 @@ namespace WebServerTests.Integration
         [Test]
         public void SimpleHead()
         {
-            var serverUri = String.Format("http://{0}:{1}", ServerConfig.Instance.IpAddress, ServerConfig.Instance.Port);
+            var serverUri = String.Format("http://{0}:{1}", _ipAddress, _port);
             var uri = serverUri + "/home.html";
 
             Console.WriteLine(uri);
@@ -49,7 +53,7 @@ namespace WebServerTests.Integration
         [Test]
         public void SimplePut()
         {
-            var serverUri = String.Format("http://{0}:{1}", ServerConfig.Instance.IpAddress, ServerConfig.Instance.Port);
+            var serverUri = String.Format("http://{0}:{1}", _ipAddress, _port);
             var uri = serverUri + "/home2.html";
 
             Console.WriteLine(uri);
@@ -74,7 +78,7 @@ namespace WebServerTests.Integration
         [Test]
         public void ChunkedPut()
         {
-            var serverUri = String.Format("http://{0}:{1}", ServerConfig.Instance.IpAddress, ServerConfig.Instance.Port);
+            var serverUri = String.Format("http://{0}:{1}", _ipAddress, _port);
             var uri = serverUri + "/home2.html";
 
             Console.WriteLine(uri);
@@ -108,7 +112,7 @@ namespace WebServerTests.Integration
         [Test]
         public void ExpectPost()
         {
-            var serverUri = String.Format("http://{0}:{1}", ServerConfig.Instance.IpAddress, ServerConfig.Instance.Port);
+            var serverUri = String.Format("http://{0}:{1}", _ipAddress, _port);
             var uri = serverUri + "/success.html";
 
             Console.WriteLine(uri);
@@ -137,7 +141,7 @@ namespace WebServerTests.Integration
         [Test]
         public void ExpectPut()
         {
-            var serverUri = String.Format("http://{0}:{1}", ServerConfig.Instance.IpAddress, ServerConfig.Instance.Port);
+            var serverUri = String.Format("http://{0}:{1}", _ipAddress, _port);
             var uri = serverUri + "/success.html";
 
             Console.WriteLine(uri);

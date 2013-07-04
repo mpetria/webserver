@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.Specialized;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -20,7 +21,33 @@ namespace WebServer.Config
             { "txt", "text/plain"}
         };
 
-        public string DefaultMimeType = "application/octet-stream";
+        public const string DefaultMimeType = "application/octet-stream";
+
+        public int Port = 80;
+
+        public int MaxUriLength = 512;
+
+        public bool UseStreams = false;
+
+        public readonly string RootDirectory = @"C:\SiteRoot";
+       
+        public readonly string Host = "*";
+
+
+        public ServerConfig(NameValueCollection settings)
+        {
+            try
+            {
+                RootDirectory = settings["RootDirectory"];
+                UseStreams = bool.Parse(settings["UseStreams"]);
+                MaxUriLength = int.Parse(settings["MaxUriLength"]);
+                Host = settings["Host"];
+                Port = int.Parse(settings["Port"]);
+            }
+            catch (Exception)
+            {
+            }
+        }
 
         public string GetMimeTypeForExtension(string extension)
         {
@@ -32,16 +59,10 @@ namespace WebServer.Config
             {
                 return DefaultMimeType;
             }
-            
+
             return ExtensionsToMimeTypes[extension];
         }
 
-        public string RootDirectory = @"C:\Work\SiteRoot";
-
-
-
-        public string Host { get; set; }
-        
 
         public IResourceHandler GetHandlerForPath(string host, string path)
         {
@@ -51,29 +72,18 @@ namespace WebServer.Config
             }
             else
             {
-                return new FileResourceHandler(RootDirectory);
+                return new FileResourceHandler(RootDirectory, this);
             }
         }
 
-        public int Port = 9010;
-        public IPAddress IpAddress = IPAddress.Loopback;
-
-
-
-        public int MaxUriLength = 512;
-
-        public bool UseStreams = false;
-
-
         public bool IsSupportedHost(string host)
         {
-            return true;
+            if (Host == "*")
+                return true;
+            
+            return String.Compare(Host, host, ignoreCase: true) == 0;
         }
-
-
-
-
-        public static ServerConfig Instance = new ServerConfig();
+        
     }
 
 }

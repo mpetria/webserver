@@ -11,6 +11,7 @@ namespace WebServer.Managers
         void ManageBytes(byte[] bytes);
         void ManageStream(Stream stream);
 
+        void Close();
         void SetLinkedDataManager(IDataManager dataManager);
     }
 }

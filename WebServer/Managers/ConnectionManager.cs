@@ -15,6 +15,7 @@ namespace WebServer.Managers
         private readonly ILogger _logger;
         private readonly NetworkStream _clientStream;
         private IDataManager _requestManager;
+        private bool _connectionOpened = true;
 
         public ConnectionManager(TcpClient tcpClient, ILogger logger)
         {
@@ -28,9 +29,9 @@ namespace WebServer.Managers
             _logger.Log("Connection Opened");
 
             byte[] buffer = new byte[4096];
+            _connectionOpened = true;
 
-
-            while (true)
+            while (_connectionOpened)
             {
                 int bytesRead = 0;
 
@@ -107,6 +108,11 @@ namespace WebServer.Managers
                     ManageBytes(bytes);
                 }
             }
+        }
+
+        public void Close()
+        {
+            _connectionOpened = false;
         }
 
         public void SetLinkedDataManager(IDataManager dataManager)

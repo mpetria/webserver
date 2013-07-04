@@ -24,7 +24,7 @@ namespace WebServer.Managers
 
         public Response ProceesRequest(Request request, bool processExpectation = false)
         {
-            _logger.Log("Request", String.Format("Method: {0} Host: {1} UriPath: {2}", request.Method, request.Host, request.UriPath));
+            _logger.Log("Request", String.Format("Method: {0} Host: {1} UriPath: {2}", request.Method, request.Host, request.PathAndQuery));
 
             var response = InnerProceesRequest(request, processExpectation);
 
@@ -42,7 +42,7 @@ namespace WebServer.Managers
             returnResponse = ValidateRequest(request, response);
             if (returnResponse) return response;
 
-            var handler = _serverConfig.GetHandlerForPath(request.Host, request.UriPath);
+            var handler = _serverConfig.GetHandlerForPath(request.Host, request.PathAndQuery);
 
             returnResponse = CheckIfMethodIsAllowed(handler, request, response);
             if (returnResponse) return response;
@@ -75,7 +75,7 @@ namespace WebServer.Managers
         {
             if(request.Method == HttpMethod.PUT)
             {
-                var created = handler.CreateOrUpdateResource(request.UriPath, request.GetHeaderValue(HttpHeader.ContentType), request.Body);
+                var created = handler.CreateOrUpdateResource(request.PathAndQuery, request.GetHeaderValue(HttpHeader.ContentType), request.Body);
                 if(created)
                 {
                     response.StatusCode = HttpStatusCode.Created;
@@ -97,7 +97,7 @@ namespace WebServer.Managers
                 return true;
             }
 
-            if(request.UriPath.Length > _serverConfig.MaxUriLength)
+            if(request.PathAndQuery.Length > _serverConfig.MaxUriLength)
             {
                 response.StatusCode = HttpStatusCode.RequestURITooLong;
                 return true;
@@ -110,7 +110,7 @@ namespace WebServer.Managers
         {
             if(request.Method == HttpMethod.HEAD || request.Method == HttpMethod.GET)
             {
-                if (!handler.CheckIfExists(request.UriPath))
+                if (!handler.CheckIfExists(request.PathAndQuery))
                 {
                     response.StatusCode = HttpStatusCode.NotFound;
                     return true;
@@ -122,7 +122,7 @@ namespace WebServer.Managers
 
         public bool CheckIfMethodIsAllowed(IResourceHandler handler, Request request, Response response)
         {
-            var allowedMethods = handler.GetAllowedMethods(request.UriPath);
+            var allowedMethods = handler.GetAllowedMethods(request.PathAndQuery);
             if (!allowedMethods.Contains(request.Method))
             {
                 response.StatusCode = HttpStatusCode.MethodNotAllowed;
@@ -135,7 +135,7 @@ namespace WebServer.Managers
 
         public bool CheckIfMediaTypeIsAllowed(IResourceHandler handler, Request request, Response response)
         {
-            var allowedMediaTypes = handler.GetAllowedMediaTypes(request.UriPath, request.Method);
+            var allowedMediaTypes = handler.GetAllowedMediaTypes(request.PathAndQuery, request.Method);
             var contentType = request.GetHeaderValue(HttpHeader.ContentType);
             if (contentType != null && !allowedMediaTypes.Contains(contentType))
             {
@@ -150,7 +150,7 @@ namespace WebServer.Managers
         {
             string lastModifiedDate, eTag;
 
-            handler.GetVersioning(request.UriPath, out lastModifiedDate, out eTag);
+            handler.GetVersioning(request.PathAndQuery, out lastModifiedDate, out eTag);
 
             if(lastModifiedDate != null)
                 response.Headers.Add(HttpHeader.LastModified, lastModifiedDate);
@@ -177,7 +177,7 @@ namespace WebServer.Managers
 
         public bool ProduceBody(IResourceHandler handler, Request request, Response response)
         {
-            var availableMediaTypes = handler.GetAvailableMediaTypes(request.UriPath, request.Method);
+            var availableMediaTypes = handler.GetAvailableMediaTypes(request.PathAndQuery, request.Method);
 
             // check accept headers
 
@@ -186,7 +186,7 @@ namespace WebServer.Managers
 
             if (request.Method == HttpMethod.HEAD)
             {
-                var length = handler.GetResourceLength(request.UriPath, chosenMediaType);
+                var length = handler.GetResourceLength(request.PathAndQuery, chosenMediaType);
                 response.Headers[HttpHeader.ContentLength] = length.ToString();
                 response.SuppressBody = true;
             }
@@ -194,13 +194,13 @@ namespace WebServer.Managers
             {
                 if(_serverConfig.UseStreams)
                 {
-                    var length = handler.GetResourceLength(request.UriPath, chosenMediaType);
+                    var length = handler.GetResourceLength(request.PathAndQuery, chosenMediaType);
                     response.Headers[HttpHeader.ContentLength] = length.ToString();
-                    response.BodyStream = handler.GetResourceStream(request.UriPath, chosenMediaType);
+                    response.BodyStream = handler.GetResourceStream(request.PathAndQuery, chosenMediaType);
                 }
                 else
                 {
-                    var fileContent = handler.GetResourceBytes(request.UriPath, chosenMediaType);
+                    var fileContent = handler.GetResourceBytes(request.PathAndQuery, chosenMediaType);
                     response.BodyBytes = fileContent;
                 }
                 
