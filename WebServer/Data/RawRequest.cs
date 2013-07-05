@@ -70,7 +70,6 @@ namespace WebServer.Data
             string version;
 
             RequestParser.ParseRequestLine(rawRequest.RequestLine, out method, out uri, out version);
-          
 
             var request = new Request() {Method = method};
 
@@ -99,6 +98,13 @@ namespace WebServer.Data
                 request.PathAndQuery = uri;
                 request.Host = request.GetHeaderValue(HttpHeader.Host);
             }
+
+            if (String.IsNullOrEmpty(request.PathAndQuery))
+            {
+                request.PathAndQuery = "/";
+            }
+
+            request.PathAndQuery = Uri.UnescapeDataString(request.PathAndQuery);
 
             request.Body = rawRequest.Body;
             return request;

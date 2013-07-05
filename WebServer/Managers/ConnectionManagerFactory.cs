@@ -26,7 +26,7 @@ namespace WebServer.Managers
 
 
             var rawRequestmanager = new RawRequestManager(connectionLogger, requestManagerFactory);
-            var connectionManager = new ConnectionManager(tcpClient, connectionLogger);
+            var connectionManager = new ConnectionManager(tcpClient, connectionLogger, connectionId);
             rawRequestmanager.SetLinkedDataManager(connectionManager);
             connectionManager.SetLinkedDataManager(rawRequestmanager);
 

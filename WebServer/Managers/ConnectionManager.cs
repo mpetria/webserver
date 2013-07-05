@@ -13,14 +13,17 @@ namespace WebServer.Managers
     {
         private readonly TcpClient _tcpClient;
         private readonly ILogger _logger;
+        private readonly string _connectionId;
         private readonly NetworkStream _clientStream;
         private IDataManager _requestManager;
         private bool _connectionOpened = true;
 
-        public ConnectionManager(TcpClient tcpClient, ILogger logger)
+
+        public ConnectionManager(TcpClient tcpClient, ILogger logger, string connectionId)
         {
             _tcpClient = tcpClient;
             _logger = logger;
+            _connectionId = connectionId;
             _clientStream = _tcpClient.GetStream();
         }
 
@@ -62,6 +65,11 @@ namespace WebServer.Managers
             }
 
             _logger.Log("Connection Closed");
+        }
+
+        public string ConnectionId
+        {
+            get { return _connectionId;  }
         }
 
         void SendBytesToClient(NetworkStream clientStream, byte[] responseBytes)

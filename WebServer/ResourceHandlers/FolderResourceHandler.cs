@@ -28,22 +28,35 @@ namespace WebServer.ResourceHandlers
             return new List<string>(){ HttpMethod.GET, HttpMethod.HEAD };
         }
 
-        private const string HtmlTemplate = @"<html><body>{0}</body></html>";
+        private const string HtmlTemplate = 
+            @"<html><body>
+                        <h2>Folders</h2>
+                        <div>{0}</div>
+                        <h2>Files</h2>
+                        <div>{1}</div>
+            </body></html>";
         override public byte[] GetResourceBytes(string resourceUri, string contentType)
         {
-            StringBuilder sb = new StringBuilder();
+            StringBuilder sbFiles = new StringBuilder();
+            StringBuilder sbFolders = new StringBuilder();
 
             
             var physicalPath = GetPhysicalPath(resourceUri);
-            foreach (var filePath in Directory.GetFiles(physicalPath))
-            {
-                var fileInfo = new FileInfo(filePath);
-                sb.AppendFormat(@"<div><a href=""{0}"">{1}<a></div>", GetResourceUri(fileInfo.FullName), fileInfo.Name);
 
+            foreach (var directoryPath in Directory.GetDirectories(physicalPath))
+            {
+                var directoryInfo = new DirectoryInfo(directoryPath);
+                sbFolders.AppendFormat(@"<div><a href=""{0}"">{1}<a></div>", GetResourceUri(directoryInfo.FullName), directoryInfo.Name);
             }
 
 
-            var response = String.Format(HtmlTemplate, sb);
+            foreach (var filePath in Directory.GetFiles(physicalPath))
+            {
+                var fileInfo = new FileInfo(filePath);
+                sbFiles.AppendFormat(@"<div><a href=""{0}"">{1}<a></div>", GetResourceUri(fileInfo.FullName), fileInfo.Name);
+            }
+
+            var response = String.Format(HtmlTemplate, sbFolders, sbFiles);
             return new ASCIIEncoding().GetBytes(response);
         }
 
