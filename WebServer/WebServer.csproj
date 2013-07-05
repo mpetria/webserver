@@ -49,6 +49,7 @@
     <Compile Include="Config\ServerConfigFactory.cs" />
     <Compile Include="Data\HttpHeader.cs" />
     <Compile Include="Data\HttpMethod.cs" />
+    <Compile Include="Data\HttpVersion.cs" />
     <Compile Include="Data\RawRequest.cs" />
     <Compile Include="Data\RawResponse.cs" />
     <Compile Include="Data\Request.cs" />
