@@ -141,9 +141,17 @@ namespace WebServer.Managers
 
         private bool DeliverRequestExpectation()
         {
+            var request = RawRequest.BuildRequest(_currentRequest);
+            
+            // Deal with request expectation only for HTTP/1.1 clients
+            if(request.Version != HttpVersion.HTTP_1_1)
+            {
+                _httpParserState = HttpParserState.ReadRequestBody;
+                return true;
+            }
+
             var requestManager = _requestManagerFactory();
 
-            var request = RawRequest.BuildRequest(_currentRequest);
             var response = requestManager.ProceesRequest(request, processExpectation : true);
             if (response.StatusCode.IsSuccessCode())
             {

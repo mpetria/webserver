@@ -14,6 +14,7 @@ namespace WebServer.Data
 
         public string Method { get; set; }
         public string Host { get; set; }
+        public string Version { get; set; }
         public string PathAndQuery { get; set; }
         public byte[] Body { get; set; }
 
@@ -37,8 +38,9 @@ namespace WebServer.Data
 
         public bool IsValid()
         {
-            if (Host == null)
+            if (Version == HttpVersion.HTTP_1_1 && Host == null)
                 return false;
+
             if (Method != HttpMethod.TRACE 
                 && Method != HttpMethod.PUT 
                 && Method != HttpMethod.POST 

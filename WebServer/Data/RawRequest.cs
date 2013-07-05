@@ -71,7 +71,7 @@ namespace WebServer.Data
 
             RequestParser.ParseRequestLine(rawRequest.RequestLine, out method, out uri, out version);
 
-            var request = new Request() {Method = method};
+            var request = new Request() {Method = method, Version = version};
 
 
             foreach (var headerLine in rawRequest.HeaderLines)
