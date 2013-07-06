@@ -59,12 +59,10 @@
     <Compile Include="ResourceHandlers\FsResourceHandler.cs" />
     <Compile Include="ResourceHandlers\IResourceHandler.cs" />
     <Compile Include="ResourceHandlers\FileResourceHandler.cs" />
-    <Compile Include="Managers\ConnectionManager.cs" />
     <Compile Include="Managers\ConnectionManagerFactory.cs" />
     <Compile Include="Managers\IConnectionManager.cs" />
-    <Compile Include="Managers\IDataManager.cs" />
     <Compile Include="Managers\IRequestManager.cs" />
-    <Compile Include="Managers\RawRequestManager.cs" />
+    <Compile Include="Managers\ConnectionManager.cs" />
     <Compile Include="Managers\RequestManager.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

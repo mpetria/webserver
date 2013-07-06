@@ -1,40 +1,90 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
-using System.Net.Sockets;
 using System.Text;
+using WebServer.Data;
 using WebServer.Utils;
 
 
 namespace WebServer.Managers
 {
-    public class ConnectionManager : IConnectionManager, IDataManager
+    public enum HttpParserState
     {
-        private readonly TcpClient _tcpClient;
+        ReadRequestLine,
+        ReadRequestHeader,
+        ReadRequestBody,
+        DeliverRequestExpectation,
+        DeliverRequest,
+        RequestCompleted
+    }
+
+    public enum HttpConnectionState
+    {
+        ConnectionUnitialized,
+        ConnectionOpened,
+        ConnectionClose
+    }
+
+   
+
+    public class ConnectionManager : IConnectionManager
+    {
         private readonly ILogger _logger;
+        private readonly Func<IRequestManager> _requestManagerFactory;
         private readonly string _connectionId;
-        private readonly NetworkStream _clientStream;
-        private IDataManager _requestManager;
-        private bool _connectionOpened = true;
+        private byte[] _unprocessedBytes;
 
+        private HttpParserState _httpParserState;
+        private HttpConnectionState _httpConnectionState;
 
-        public ConnectionManager(TcpClient tcpClient, ILogger logger, string connectionId)
+        private RawRequest _currentRequest;
+        private Stream _clientStream;
+
+        public  ConnectionManager(ILogger logger, Func<IRequestManager> requestManagerFactory, string connectionId)
         {
-            _tcpClient = tcpClient;
             _logger = logger;
+            _requestManagerFactory = requestManagerFactory;
             _connectionId = connectionId;
-            _clientStream = _tcpClient.GetStream();
+            _unprocessedBytes = new byte[0];
+            _httpConnectionState = HttpConnectionState.ConnectionUnitialized;
         }
 
-        public void ListenForBytesFromClient()
+        #region IConnectionManager members
+
+        public void ProcessStream(Stream clientStream)
         {
-            _logger.Log("Connection Opened");
+            _clientStream = clientStream;
+            _httpConnectionState = HttpConnectionState.ConnectionOpened;
 
+            InitializeNewRequest();
+            ReceiveBytesFromClient();
+        }
+
+
+        public void Close()
+        {
+            _httpConnectionState = HttpConnectionState.ConnectionClose;
+        }
+
+        public string ConnectionId 
+        { 
+            get
+            {
+                return _connectionId;
+
+            } 
+        }
+
+        #endregion
+
+        #region Cient Stream Processing
+        private void ReceiveBytesFromClient()
+        {
             byte[] buffer = new byte[4096];
-            _connectionOpened = true;
 
-            while (_connectionOpened)
+            while (_httpConnectionState == HttpConnectionState.ConnectionOpened)
             {
                 int bytesRead = 0;
 
@@ -59,73 +109,215 @@ namespace WebServer.Managers
                 //message has successfully been received
                 _logger.Log("Bytes Received", bytes);
 
-                _requestManager.ManageBytes(bytes);
+                ManageBytes(bytes);
 
                 _logger.Log("Bytes Processed");
             }
-
-            _logger.Log("Connection Closed");
         }
 
-        public string ConnectionId
-        {
-            get { return _connectionId;  }
-        }
 
-        void SendBytesToClient(NetworkStream clientStream, byte[] responseBytes)
+        private void SendBytesToClient(byte[] responseBytes)
         {
             _logger.Log("Bytes Sent", responseBytes);
+            _clientStream.Write(responseBytes, 0, responseBytes.Length);
+            _clientStream.Flush();
 
-            clientStream.Write(responseBytes, 0, responseBytes.Length);
-            clientStream.Flush();
-            
         }
 
-        public void ManageBytes(byte[] bytes)
-        {
-            SendBytesToClient(_clientStream, bytes);
-        }
-
-        public void ManageStream(Stream stream)
+        private void SendStreamToClient(Stream stream)
         {
             if (stream != null)
+                stream.CopyTo(_clientStream, 4096);
+        }
+
+        #endregion
+
+        #region Request Processing
+
+
+        private void ManageBytes(byte[] receivedBytes)
+        {
+            _unprocessedBytes = _unprocessedBytes.Concat(receivedBytes).ToArray();
+
+            try
             {
-                while (true)
+                ParseAndExecuteRequest();
+            }
+            catch (Exception ex)
+            {
+                InitializeNewRequest();
+                SendResponseToClient(new Response() { StatusCode = HttpStatusCode.InternalServerError });
+            }
+        }
+
+        private void ParseAndExecuteRequest()
+        {
+            bool continueReading = true;
+            while (continueReading && _httpConnectionState == HttpConnectionState.ConnectionOpened)
+            {
+                switch (_httpParserState)
                 {
-                    byte[] buffer = new byte[4096];
-                    int bytesRead = 0;
-
-                    try
-                    {
-                        //blocks until a client sends a message
-                        bytesRead = stream.Read(buffer, 0, 4096);
-                    }
-                    catch
-                    {
-                        //a socket error has occured
+                    case HttpParserState.ReadRequestLine:
+                        continueReading = ReadRequestLine();
                         break;
-                    }
-
-                    if (bytesRead == 0)
-                    {
-                        //the client has disconnected from the server
+                    case HttpParserState.ReadRequestHeader:
+                        continueReading = ReadRequestHeader();
                         break;
-                    }
-
-                    var bytes = buffer.Take(bytesRead).ToArray();
-                    ManageBytes(bytes);
+                    case HttpParserState.ReadRequestBody:
+                        continueReading = ReadRequestBody();
+                        break;
+                    case HttpParserState.DeliverRequestExpectation:
+                        continueReading = DeliverRequestExpectation();
+                        break;
+                    case HttpParserState.DeliverRequest:
+                        continueReading = DeliverRequest();
+                        break;
+                    case HttpParserState.RequestCompleted:
+                        continueReading = InitializeNewRequest();
+                        break;
+                    default:
+                        throw new ArgumentOutOfRangeException();
                 }
             }
         }
 
-        public void Close()
+        private bool InitializeNewRequest()
         {
-            _connectionOpened = false;
+            _currentRequest = new RawRequest();
+            _httpParserState = HttpParserState.ReadRequestLine;
+            return true;
         }
 
-        public void SetLinkedDataManager(IDataManager dataManager)
+        private bool DeliverRequest()
         {
-            _requestManager = dataManager;
+            var requestManager = _requestManagerFactory();
+
+            var request = RawRequest.BuildRequest(_currentRequest);
+            var response = requestManager.ProceesRequest(request);
+
+            SendResponseToClient(response);
+
+            if(_currentRequest.CloseConnection)
+            {
+                Close();
+                return false;
+            }
+
+            _httpParserState = HttpParserState.RequestCompleted;
+            return true;
+
         }
+
+        private bool DeliverRequestExpectation()
+        {
+            var request = RawRequest.BuildRequest(_currentRequest);
+            
+            // Deal with request expectation only for HTTP/1.1 clients
+            if(request.Version != HttpVersion.HTTP_1_1)
+            {
+                _httpParserState = HttpParserState.ReadRequestBody;
+                return true;
+            }
+
+            var requestManager = _requestManagerFactory();
+
+            var response = requestManager.ProceesRequest(request, processExpectation : true);
+            if (response.StatusCode.IsSuccessCode())
+            {
+                response = new Response() { StatusCode = HttpStatusCode.Continue };
+            }
+
+            SendResponseToClient(response);
+            
+            if (response.StatusCode == HttpStatusCode.Continue)
+            {
+                _httpParserState = HttpParserState.ReadRequestBody;
+            }
+            else
+            {
+                _httpParserState = HttpParserState.RequestCompleted;
+            }
+            
+            return true;
+
+        }
+
+        private void SendResponseToClient(Response response)
+        {
+            var rawResponse = RawResponse.BuildRawResponse(response);
+            SendBytesToClient(rawResponse.ResponseBytes);
+
+            if (rawResponse.ResponseStream != null)
+            {
+                SendStreamToClient(rawResponse.ResponseStream);
+            }
+        }
+        #endregion
+
+        #region Request Parsing
+
+        private bool ReadRequestLine()
+        {
+            byte[] lineBytes;
+            if (!RequestParser.ReadLine(ref _unprocessedBytes, out lineBytes)) return false;
+
+            _currentRequest.AddRequestLine(lineBytes);
+
+            _httpParserState = HttpParserState.ReadRequestHeader;
+            return true;
+        }
+
+        private bool ReadRequestHeader()
+        {
+            byte[] lineBytes;
+            if (!RequestParser.ReadLine(ref _unprocessedBytes, out lineBytes)) return false;
+
+            
+
+            if (lineBytes.Length > 0)
+            {
+                _currentRequest.AddHeaderLine(lineBytes);
+            }
+            else
+            {
+
+                if (_currentRequest.Expects100Continue)
+                {
+                    _httpParserState = HttpParserState.DeliverRequestExpectation;
+                }
+                else
+                {
+                    _httpParserState = HttpParserState.ReadRequestBody;
+                }
+                
+            }
+
+            return true;
+        }
+
+        private bool ReadRequestBody()
+        {
+            byte[] bodyBytes=null;
+
+           
+            if(_currentRequest.IsChunkedTransferEncoding)
+            {
+                if (!RequestParser.ReadChunkedBytes(ref _unprocessedBytes, out bodyBytes)) return false;
+                
+            }
+            else if(_currentRequest.ContentLength.HasValue)
+            {
+                if (!RequestParser.ReadBytes(ref _unprocessedBytes, _currentRequest.ContentLength.Value, out bodyBytes)) return false;
+            }
+
+            _currentRequest.AddBody(bodyBytes);
+            _httpParserState = HttpParserState.DeliverRequest;
+            return true;
+        }
+
+        
+
+        #endregion
+
     }
 }

@@ -4,8 +4,8 @@ namespace WebServer.Managers
 {
     public interface IConnectionManager
     {
-        void ListenForBytesFromClient();
-        string ConnectionId { get; }
+        void ProcessStream(Stream clientStream);
         void Close();
+        string ConnectionId { get; }
     }
 }

@@ -1,13 +1,28 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 
 namespace WebServer.Utils
 {
+    public class SpecialBytes
+    {
+        public const byte CR = 13;
+        public const byte LF = 10;
+        public const byte SP = 32;
+        public const byte HT = 9;
+    }
+
+
     public static class RequestParser
     {
+
+        
+
+
+        #region String Parsing
 
         static Regex _requestLineRegex = new Regex(@"(?<method>[^\s]+)\s+(?<uri>[^\s]+)\s+(?<version>[^\s]+)");
         static Regex _headerLineRegex = new Regex(@"(?<key>[^:]+):(?<value>.+)");
@@ -40,5 +55,80 @@ namespace WebServer.Utils
             return true;
 
         }
+
+        #endregion
+
+
+        #region Byte Parsing
+
+        public static bool ReadChunkedBytes(ref byte[] unprocessedBytes, out byte[] bodyBytes)
+        {
+            bodyBytes = new byte[0];
+            var currentUnprocessedBytes = unprocessedBytes;
+            byte[] chunkBytes;
+            do
+            {
+
+                byte[] lineBytes;
+                if (!ReadLine(ref currentUnprocessedBytes, out lineBytes)) return false;
+                var chunkSizeString = new ASCIIEncoding().GetString(lineBytes);
+                int chunkSize = int.Parse(chunkSizeString, NumberStyles.HexNumber);
+
+                if (!ReadBytes(ref currentUnprocessedBytes, chunkSize, out chunkBytes)) return false;
+                bodyBytes = bodyBytes.Concat(chunkBytes).ToArray();
+
+                // eat the ending CRLF
+                if (!ReadLine(ref currentUnprocessedBytes, out lineBytes)) return false;
+                if (lineBytes.Length > 0) throw new Exception("Bad Format");
+            } while (chunkBytes.Length > 0);
+
+            unprocessedBytes = currentUnprocessedBytes;
+            return true;
+
+        }
+
+        public static bool ReadLine(ref byte[] unprocessedBytes, out byte[] lineBytes)
+        {
+            lineBytes = null;
+
+            int lineLength = FindCRLF(unprocessedBytes);
+            if (lineLength < 0)
+                return false;
+
+            lineBytes = unprocessedBytes.Take(lineLength).ToArray();
+
+            unprocessedBytes = unprocessedBytes.Skip(lineLength + 2).ToArray();
+
+            return true;
+        }
+
+        public static bool ReadBytes(ref byte[] unprocessedBytes, int numberOfBytes, out byte[] lineBytes)
+        {
+            lineBytes = null;
+
+            if (numberOfBytes > unprocessedBytes.Length)
+                return false;
+
+            lineBytes = unprocessedBytes.Take(numberOfBytes).ToArray();
+
+            unprocessedBytes = unprocessedBytes.Skip(numberOfBytes).ToArray();
+
+            return true;
+        }
+
+        public static int FindCRLF(byte[] bytes)
+        {
+            for (var i = 0; i < bytes.Length - 1; i++)
+            {
+                if (bytes[i] == SpecialBytes.CR && bytes[i + 1] == SpecialBytes.LF)
+                {
+                    // found line end
+                    return i;
+                }
+            }
+            return -1;
+        }
+
+        #endregion
     }
 }

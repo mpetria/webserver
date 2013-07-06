@@ -63,7 +63,7 @@ namespace WebServer
                 _connections.Add(connectionManager.ConnectionId, connectionManager);
             }
 
-            connectionManager.ListenForBytesFromClient();
+            connectionManager.ProcessStream(tcpClient.GetStream());
 
             lock (_syncObject)
             {
