@@ -15,8 +15,7 @@ namespace WebServer
             var server = new Server();
             server.Start(IPAddress.Any, serverConfig.Port);
 
-            Console.WriteLine("Server started for {0}:{1}", serverConfig.Host, serverConfig.Port);
-            Console.WriteLine("Root directory is {0}", serverConfig.RootDirectory);
+            Console.WriteLine("Server started for {0}:{1}", serverConfig.HostDirectoriesString, serverConfig.Port);
             Console.WriteLine("Press ENTER to stop");
 
             Console.ReadLine();

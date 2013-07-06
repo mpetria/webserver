@@ -44,6 +44,13 @@ namespace WebServer.Managers
 
             var handler = _serverConfig.GetHandlerForPath(request.Host, request.Path);
 
+            // If the host is not a valid host on the server, the response MUST be a 400 (Bad Request) error message. 
+            if(handler == null)
+            {
+                response.StatusCode = HttpStatusCode.BadRequest;
+                return response;
+            }
+
             returnResponse = CheckIfMethodIsAllowed(handler, request, response);
             if (returnResponse) return response;
             

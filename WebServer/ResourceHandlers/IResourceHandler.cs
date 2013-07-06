@@ -7,6 +7,7 @@ using WebServer.Data;
 
 namespace WebServer.ResourceHandlers
 {
+    // This interface is an abstractization of a resource state
     public interface IResourceHandler
     {
         bool CheckIfExists(string resourceUri);

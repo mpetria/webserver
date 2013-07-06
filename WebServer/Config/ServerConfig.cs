@@ -30,26 +30,38 @@ namespace WebServer.Config
         public int MaxUriLength = 512;
 
         public bool UseStreams = false;
-
-        public readonly string RootDirectory = @"C:\SiteRoot";
        
-        public readonly string Host = "*";
+        public readonly IDictionary<string, string> HostDirectories = new Dictionary<string, string>() { {"*", @"C:\SiteRoot"} };
+
+        public string HostDirectoriesString { get; set; }
 
 
         public ServerConfig(NameValueCollection settings)
         {
             try
             {
-                RootDirectory = settings["RootDirectory"];
                 UseStreams = bool.Parse(settings["UseStreams"]);
                 MaxUriLength = int.Parse(settings["MaxUriLength"]);
-                Host = settings["Host"];
+                HostDirectoriesString = settings["HostDirectories"];
+                HostDirectories = ParseHostDirectories(HostDirectoriesString);
                 Port = int.Parse(settings["Port"]);
                 ReadMimeTypesFromResource();
             }
             catch (Exception)
             {
             }
+        }
+
+        private IDictionary<string, string> ParseHostDirectories(string hostDirectories)
+        {
+            var result = new Dictionary<string, string>();
+            var hostEntries = hostDirectories.Split(new char[] {';', ' '}, StringSplitOptions.RemoveEmptyEntries);
+            foreach (var hostEntry in hostEntries)
+            {
+                var tokens = hostEntry.Split(new char[] {'='});
+                result.Add(tokens[0].ToLower(), tokens[1]);
+            }
+            return result;
         }
 
         public string GetMimeTypeForExtension(string extension)
@@ -66,25 +78,40 @@ namespace WebServer.Config
             return ExtensionsToMimeTypes[extension];
         }
 
+        private string GetRootDirectoryForHost(string host)
+        {
+            host = host.SubstringBefore(':').Trim().ToLower();
+            if (HostDirectories.ContainsKey(host))
+            {
+                return HostDirectories[host];
+            }
+            if(HostDirectories.ContainsKey("*"))
+            {
+                return HostDirectories["*"];
+            }
+            return null;
+        }
+
 
         public IResourceHandler GetHandlerForPath(string host, string path)
         {
+            var rootDirectory = GetRootDirectoryForHost(host);
+
+            if (rootDirectory == null) return null; 
+
             if(!Path.HasExtension(path))
             {
-                return new FolderResourceHandler(RootDirectory);
+                return new FolderResourceHandler(rootDirectory);
             }
             else
             {
-                return new FileResourceHandler(RootDirectory, this);
+                return new FileResourceHandler(rootDirectory, this);
             }
         }
 
         public bool IsSupportedHost(string host)
         {
-            if (Host == "*")
-                return true;
-            
-            return String.Compare(Host, host, ignoreCase: true) == 0;
+            return GetRootDirectoryForHost(host) != null;
         }
 
         public bool IsSupportedTransferEncoding(string encoding)

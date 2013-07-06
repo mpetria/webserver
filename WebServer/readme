@@ -1,1 +1,38 @@
-﻿
+﻿Summary
+This is a file-based webserver that implements GET, HEAD, PUT methods on files and folders (PUT method is only allowed for files).
+The implementation supports chunked transfer encodings, resource versioning based on last-modified-date, multiple hosts.
+
+Metohds on files:
+- GET (HEAD) on a file retrives the resource
+- PUT creates/updates the resource
+
+Method on folders:
+- GET (HEAD) on a folder retrieves a html directory listing
+- PUT is not allowed 
+
+
+Main components
+- Server
+- ConnectionManager
+- RequestManager
+- ResourceHandler
+
+Flow
+The Server listens for incoming connections and starts a ConnectionManager for each TCP connection.
+The ConnectionManager listens for bytes from the client on the established connection trying to parse and build a request. After assembling a request it delivers the request to the RequestManager.
+The RequestManager implements most of the HTTP rules. It determines what Resource to query and implements validation, versioning for that resource.
+The ResourceHandler is an interface to communicate with actual resources. There are two kinds of resources implemented: files and folders.
+
+Paralelism
+Each connection is handled on its own thread. The server queues a job in .net ThreadPool and hence it can serve multiple connections.
+There is no paralelism at request handling level even though it can be implemented by starting each request manager on its own thread. However this will require implementing pipelining to ensure that response are sent in the same order as the requests are received.
+
+Configuration
+
+To configure the server one must edit WebServer.exe.config and configure the HostDirectories entry and Port entry.
+  <add key="HostDirectories" value="*=C:\Work\SiteRoot; www.webday.com=C:\Work\SiteRoot2"/>
+  <add key="Port" value="9000"/>
+
+  Host directories is list of mapings between hosts and root directories separated by ;.
+  For example www.mysite.com=C:\Work\SiteRoot; www.webday.com=C:\Work\SiteRoot2 means that www.mysite.com is served from SiteRoot and www.webday.com is served from SiteRoot2
+  One can use * wildcard to match all hosts *=C:\Work\SiteRoot
