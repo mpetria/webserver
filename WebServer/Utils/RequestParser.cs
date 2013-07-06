@@ -148,15 +148,7 @@ namespace WebServer.Utils
             return -1;
         }
 
-        public static string SubstringBefore(this string str, char c)
-        {
-            int pos = str.IndexOf(c);
-            if(pos != -1)
-            {
-                return str.Substring(0, pos);
-            }
-            return str;
-        }
+     
 
         #endregion
     }

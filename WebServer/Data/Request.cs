@@ -13,6 +13,8 @@ namespace WebServer.Data
         public string PathAndQuery { get; set; }
         public byte[] Body { get; set; }
         public IDictionary<string, string> Headers { get; set; }
+        public string Path { get; set; }
+        public string Query { get; set; }
 
         public Request()
         {

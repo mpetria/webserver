@@ -126,6 +126,8 @@ namespace WebServer.Data
             }
 
             request.PathAndQuery = Uri.UnescapeDataString(request.PathAndQuery);
+            request.Path = request.PathAndQuery.SubstringBefore('?');
+            request.Query = request.PathAndQuery.SubstringAfter('?');
 
             request.Body = rawRequest.Body;
             return request;

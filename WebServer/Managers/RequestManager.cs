@@ -42,7 +42,7 @@ namespace WebServer.Managers
             returnResponse = ValidateRequest(request, response);
             if (returnResponse) return response;
 
-            var handler = _serverConfig.GetHandlerForPath(request.Host, request.PathAndQuery);
+            var handler = _serverConfig.GetHandlerForPath(request.Host, request.Path);
 
             returnResponse = CheckIfMethodIsAllowed(handler, request, response);
             if (returnResponse) return response;
@@ -100,6 +100,12 @@ namespace WebServer.Managers
             if(request.PathAndQuery.Length > _serverConfig.MaxUriLength)
             {
                 response.StatusCode = HttpStatusCode.RequestURITooLong;
+                return true;
+            }
+
+            if(!_serverConfig.IsSupportedMethod(request.Method))
+            {
+                response.StatusCode = HttpStatusCode.NotImplemented;
                 return true;
             }
 

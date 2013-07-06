@@ -72,10 +72,11 @@
     <Compile Include="Utils\DateUtils.cs" />
     <Compile Include="Utils\ILogger.cs" />
     <Compile Include="Utils\RequestParser.cs" />
+    <Compile Include="Utils\StringUtils.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="readme" />
-    <None Include="Config\mime.types" />
+    <EmbeddedResource Include="Config\mime.types" />
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />
