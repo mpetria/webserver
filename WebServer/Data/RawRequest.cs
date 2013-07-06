@@ -11,11 +11,14 @@ namespace WebServer.Data
     {
         public string RequestLine { get; set; }
         public IList<string> HeaderLines { get; set; }
+
         public byte[] Body { get; set; }
         public int? ContentLength { get; set; }
         public bool IsChunkedTransferEncoding { get; set; }
         public bool Expects100Continue { get; set; }
         public bool CloseConnection { get; set; }
+        public IList<string> ExpectedTrailers { get; private set; }
+        public IDictionary<string, string> Headers { get; private set; }
 
         private readonly ASCIIEncoding _asciiEncoding = new ASCIIEncoding();
 
@@ -23,15 +26,18 @@ namespace WebServer.Data
         public RawRequest()
         {
             HeaderLines = new List<string>();
+            ExpectedTrailers = new List<string>();
+            Headers = new Dictionary<string, string>();
         }
 
-        public void AddHeaderLine(byte[] headerLineBytes)
+        
+        public void AddHeaderLine(byte[] headerLineBytes, out string key, out string value)
         {
             string headerLine = _asciiEncoding.GetString(headerLineBytes);
             HeaderLines.Add(headerLine);
 
-            string key, value;
             RequestParser.ParseHeaderLine(headerLine, out key, out value);
+           
 
             if(key == HttpHeader.ContentLength)
             {
@@ -39,9 +45,12 @@ namespace WebServer.Data
                 int.TryParse(value, out contentLength);
                 ContentLength = contentLength;
             }
-            else if(key == HttpHeader.TransferEncoding && value == "chunked")
+            else if(key == HttpHeader.TransferEncoding)
             {
-                IsChunkedTransferEncoding = true;
+                if(value == "chunked")
+                {
+                    IsChunkedTransferEncoding = true;
+                }
             }
             else if (key == HttpHeader.Expect && value == "100-continue")
             {
@@ -51,6 +60,12 @@ namespace WebServer.Data
             {
                 CloseConnection = true;
             }
+            else if (key == HttpHeader.Trailer)
+            {
+                ExpectedTrailers.Add(value);
+            }
+
+            AddHeader(key, value);
         }
 
         public void AddRequestLine(byte[] requestLineBytes)
@@ -61,6 +76,14 @@ namespace WebServer.Data
         public void AddBody(byte[] bodyBytes)
         {
             Body = bodyBytes;
+        }
+
+        public void AddHeader(string key, string value)
+        {
+            key = key.Trim().ToLower();
+            value = value.Trim();
+
+            Headers.Add(key, value);
         }
 
         public static Request BuildRequest(RawRequest rawRequest)
@@ -74,11 +97,9 @@ namespace WebServer.Data
             var request = new Request() {Method = method, Version = version};
 
 
-            foreach (var headerLine in rawRequest.HeaderLines)
+            foreach (var headerLine in rawRequest.Headers)
             {
-                string key, value;
-                RequestParser.ParseHeaderLine(headerLine, out key, out value);
-                request.AddHeader(key, value);
+                request.AddHeader(headerLine.Key, headerLine.Value);
             }
 
 

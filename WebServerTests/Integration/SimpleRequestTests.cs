@@ -14,7 +14,7 @@ namespace WebServerTests.Integration
     {
 
         private IPAddress _ipAddress = IPAddress.Loopback;
-        private int _port = 9010;
+        private int _port = 9000;
 
         [Test]
         public void SimpleGet()
@@ -58,10 +58,12 @@ namespace WebServerTests.Integration
 
             Console.WriteLine(uri);
 
-            var request = WebRequest.Create(uri);
+            var request = WebRequest.Create(uri) as HttpWebRequest;
             request.Method = "PUT";
             request.ContentType = "text/html";
-            const string requestBody = @"<html><body>Hello PUT</body><html>";
+            request.Headers.Add(HttpRequestHeader.ContentEncoding, "identity");
+            
+            const string requestBody = @"<html><body>Hello PUT2</body><html>";
             var requestBodyBytes = new ASCIIEncoding().GetBytes(requestBody);
             using (var requestStream = request.GetRequestStream())
             {
@@ -72,6 +74,33 @@ namespace WebServerTests.Integration
             {
                 Console.WriteLine(response.ToString());
             }
+        }
+
+        [Test]
+        public void SimplePutWithUnimplementedEncoding()
+        {
+            var serverUri = String.Format("http://{0}:{1}", _ipAddress, _port);
+            var uri = serverUri + "/home2.html";
+
+            Console.WriteLine(uri);
+
+            var request = WebRequest.Create(uri) as HttpWebRequest;
+            request.Method = "PUT";
+            request.ContentType = "text/html";
+            request.Headers.Add(HttpRequestHeader.ContentEncoding, "gzip");
+
+            const string requestBody = @"<html><body>Hello PUT2</body><html>";
+            var requestBodyBytes = new ASCIIEncoding().GetBytes(requestBody);
+
+            
+                using (var requestStream = request.GetRequestStream())
+                {
+                    requestStream.Write(requestBodyBytes, 0, requestBodyBytes.Length);
+                }
+
+
+            var responseStatus = ReadStatusCode(request);
+            Assert.AreEqual(HttpStatusCode.NotImplemented, responseStatus);
         }
 
 
@@ -87,10 +116,11 @@ namespace WebServerTests.Integration
             request.Method = "PUT";
             request.ContentType = "text/html";
             request.SendChunked = true;
+            request.Headers.Add(HttpRequestHeader.Trailer, "Connection");
 
             
       
-            string[] requestBodyChunks = { @"<html><body>First chunk", @"Second chunk</body><html>"};
+            string[] requestBodyChunks = { @"<html><body>", @"First chunk", @"Second chunk", @"</body><html>"};
             
             using (var requestStream = request.GetRequestStream())
             {
@@ -102,10 +132,9 @@ namespace WebServerTests.Integration
                     
             }
 
-            using (var response = request.GetResponse())
-            {
-                Console.WriteLine(response.ToString());
-            }
+
+            var responseStatus = ReadStatusCode(request);
+            Assert.AreEqual(HttpStatusCode.OK, responseStatus);
         }
 
 
@@ -164,6 +193,25 @@ namespace WebServerTests.Integration
             {
                 Console.WriteLine(response.ToString());
             }
+        }
+
+
+        private HttpStatusCode ReadStatusCode(WebRequest request)
+        {
+            HttpStatusCode result;
+            try
+            {
+                using(var wResp = (HttpWebResponse)request.GetResponse())
+                {
+                    result = wResp.StatusCode;
+                }
+                
+            }
+            catch (WebException we)
+            {
+                result = ((HttpWebResponse)we.Response).StatusCode;
+            }
+            return result;
         }
     }
 }

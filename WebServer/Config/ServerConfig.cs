@@ -83,7 +83,18 @@ namespace WebServer.Config
             
             return String.Compare(Host, host, ignoreCase: true) == 0;
         }
-        
+
+        public bool IsSupportedTransferEncoding(string encoding)
+        {
+            var supportedEncodings = new [] {"chunked", "identity"};
+            return supportedEncodings.Contains(encoding.ToLower());
+        }
+
+        public bool IsSupportedContentEncoding(string encoding)
+        {
+            var supportedEncodings = new[] { "identity" };
+            return supportedEncodings.Contains(encoding.ToLower());
+        }
     }
 
 }

@@ -4,6 +4,7 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
+using WebServer.Config;
 using WebServer.Data;
 using WebServer.Utils;
 
@@ -24,13 +25,14 @@ namespace WebServer.Managers
     {
         ConnectionUnitialized,
         ConnectionOpened,
-        ConnectionClose
+        ConnectionClosed
     }
 
    
 
     public class ConnectionManager : IConnectionManager
     {
+        private readonly ServerConfig _serverConfig;
         private readonly ILogger _logger;
         private readonly Func<IRequestManager> _requestManagerFactory;
         private readonly string _connectionId;
@@ -42,8 +44,9 @@ namespace WebServer.Managers
         private RawRequest _currentRequest;
         private Stream _clientStream;
 
-        public  ConnectionManager(ILogger logger, Func<IRequestManager> requestManagerFactory, string connectionId)
+        public  ConnectionManager(ServerConfig serverConfig, ILogger logger, Func<IRequestManager> requestManagerFactory, string connectionId)
         {
+            _serverConfig = serverConfig;
             _logger = logger;
             _requestManagerFactory = requestManagerFactory;
             _connectionId = connectionId;
@@ -65,7 +68,7 @@ namespace WebServer.Managers
 
         public void Close()
         {
-            _httpConnectionState = HttpConnectionState.ConnectionClose;
+            _httpConnectionState = HttpConnectionState.ConnectionClosed;
         }
 
         public string ConnectionId 
@@ -188,6 +191,34 @@ namespace WebServer.Managers
             return true;
         }
 
+        private bool ProcessRequestHeader(byte[] headerLine)
+        {
+            string key, value;
+            _currentRequest.AddHeaderLine(headerLine, out key, out value);
+
+            bool isImplemented = true;
+
+            // A server which receives an entity-body with a transfer-coding it does not understand SHOULD return 501 (Unimplemented), and close the connection.
+            if(key == HttpHeader.TransferEncoding)
+            {
+                isImplemented = _serverConfig.IsSupportedTransferEncoding(value);
+            }
+            else if(key == HttpHeader.ContentEncoding)
+            {
+                isImplemented = _serverConfig.IsSupportedContentEncoding(value);
+            }
+
+            if(!isImplemented)
+            {
+                var response = new Response() {StatusCode = HttpStatusCode.NotImplemented};
+                SendResponseToClient(response);
+                Close();
+                return false;
+            }
+
+            return true;
+        }
+
         private bool DeliverRequest()
         {
             var requestManager = _requestManagerFactory();
@@ -276,7 +307,7 @@ namespace WebServer.Managers
 
             if (lineBytes.Length > 0)
             {
-                _currentRequest.AddHeaderLine(lineBytes);
+                if (!ProcessRequestHeader(lineBytes)) return false;
             }
             else
             {
@@ -289,7 +320,6 @@ namespace WebServer.Managers
                 {
                     _httpParserState = HttpParserState.ReadRequestBody;
                 }
-                
             }
 
             return true;
@@ -298,12 +328,15 @@ namespace WebServer.Managers
         private bool ReadRequestBody()
         {
             byte[] bodyBytes=null;
-
            
             if(_currentRequest.IsChunkedTransferEncoding)
             {
-                if (!RequestParser.ReadChunkedBytes(ref _unprocessedBytes, out bodyBytes)) return false;
-                
+                IList<byte[]> footers;
+                if (!RequestParser.ReadChunkedBytes(ref _unprocessedBytes, out bodyBytes, out footers)) return false;
+                for (int i = 0; i < footers.Count; i++)
+                {
+                    if (!ProcessRequestHeader(footers[i])) return false;
+                }
             }
             else if(_currentRequest.ContentLength.HasValue)
             {

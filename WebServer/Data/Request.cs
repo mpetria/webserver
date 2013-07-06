@@ -7,18 +7,17 @@ namespace WebServer.Data
 {
     public class Request
     {
-        public Request()
-        {
-            Headers = new Dictionary<string, string>();
-        }
-
         public string Method { get; set; }
         public string Host { get; set; }
         public string Version { get; set; }
         public string PathAndQuery { get; set; }
         public byte[] Body { get; set; }
+        public IDictionary<string, string> Headers { get; set; }
 
-        public IDictionary<string, string> Headers { get; private set; }
+        public Request()
+        {
+            Headers = new Dictionary<string, string>();
+        }
 
         public void AddHeader(string key, string value)
         {

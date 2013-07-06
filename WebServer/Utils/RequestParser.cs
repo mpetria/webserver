@@ -61,26 +61,45 @@ namespace WebServer.Utils
 
         #region Byte Parsing
 
-        public static bool ReadChunkedBytes(ref byte[] unprocessedBytes, out byte[] bodyBytes)
+        public static bool ReadChunkedBytes(ref byte[] unprocessedBytes, out byte[] bodyBytes, out IList<byte[]> footerLinesBytes)
         {
             bodyBytes = new byte[0];
+            footerLinesBytes = new List<byte[]>();
+
             var currentUnprocessedBytes = unprocessedBytes;
-            byte[] chunkBytes;
+            int chunkSize;
             do
             {
-
                 byte[] lineBytes;
+                // read the chunk info
                 if (!ReadLine(ref currentUnprocessedBytes, out lineBytes)) return false;
                 var chunkSizeString = new ASCIIEncoding().GetString(lineBytes);
-                int chunkSize = int.Parse(chunkSizeString, NumberStyles.HexNumber);
 
-                if (!ReadBytes(ref currentUnprocessedBytes, chunkSize, out chunkBytes)) return false;
-                bodyBytes = bodyBytes.Concat(chunkBytes).ToArray();
+                // ignore extension
+                chunkSizeString = chunkSizeString.SubstringBefore(';');
 
-                // eat the ending CRLF
-                if (!ReadLine(ref currentUnprocessedBytes, out lineBytes)) return false;
-                if (lineBytes.Length > 0) throw new Exception("Bad Format");
-            } while (chunkBytes.Length > 0);
+                chunkSize = int.Parse(chunkSizeString, NumberStyles.HexNumber);
+
+                if (chunkSize > 0)
+                {
+                    byte[] chunkBytes;
+                    if (!ReadBytes(ref currentUnprocessedBytes, chunkSize, out chunkBytes)) return false;
+                    bodyBytes = bodyBytes.Concat(chunkBytes).ToArray();
+                    
+                    // read CRLF
+                    if (!ReadLine(ref currentUnprocessedBytes, out lineBytes)) return false;
+                }
+            } while (chunkSize > 0);
+
+            byte[] footerLineBytes;
+            do
+            {
+                if (!ReadLine(ref currentUnprocessedBytes, out footerLineBytes)) return false;
+                if (footerLineBytes.Length > 0)
+                {
+                    footerLinesBytes.Add(footerLineBytes);
+                }
+            } while (footerLineBytes.Length > 0);
 
             unprocessedBytes = currentUnprocessedBytes;
             return true;
@@ -127,6 +146,16 @@ namespace WebServer.Utils
                 }
             }
             return -1;
+        }
+
+        public static string SubstringBefore(this string str, char c)
+        {
+            int pos = str.IndexOf(c);
+            if(pos != -1)
+            {
+                return str.Substring(0, pos);
+            }
+            return str;
         }
 
         #endregion
