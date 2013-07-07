@@ -64,6 +64,16 @@ namespace WebServer.ResourceHandlers
             return false;
         }
 
+        public virtual bool DeleteResource(string resourceUri)
+        {
+            return false;
+        }
+
+        public virtual string AlterResource(string resourceUri, string contentType, byte[] content)
+        {
+            return null;
+        }
+
         public string GetPhysicalPath(string requestUri)
         {
             var queryPosition = requestUri.IndexOf("?");

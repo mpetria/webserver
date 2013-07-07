@@ -44,6 +44,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Integration\RequestHelper.cs" />
     <Compile Include="Integration\SimpleRequestTests.cs" />
     <Compile Include="Unit\DateUtilsTests.cs" />
     <Compile Include="Unit\RawRequestTests.cs" />

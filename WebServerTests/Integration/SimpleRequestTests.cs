@@ -15,6 +15,7 @@ namespace WebServerTests.Integration
 
         private IPAddress _ipAddress = IPAddress.Loopback;
         private int _port = 9000;
+        private RequestHelper _requestHelper = new RequestHelper("127.0.0.1", 9000);
 
         [Test]
         public void SimpleGet()
@@ -212,6 +213,59 @@ namespace WebServerTests.Integration
                 result = ((HttpWebResponse)we.Response).StatusCode;
             }
             return result;
+        }
+
+
+        [Test]
+        public void SimpleDelete()
+        {
+            var file = "/testdelete.html";
+            HttpStatusCode responseStatus = HttpStatusCode.OK;
+            _requestHelper.Put(file, "Hello");
+            responseStatus = _requestHelper.Get(file);
+            Assert.AreEqual(HttpStatusCode.OK, responseStatus);
+            responseStatus = _requestHelper.Delete(file);
+            Assert.AreEqual(HttpStatusCode.NoContent, responseStatus);
+            responseStatus = _requestHelper.Delete(file);
+            Assert.AreEqual(HttpStatusCode.NotFound, responseStatus);
+
+        }
+
+        [Test]
+        public void SimplePost()
+        {
+            var folder = "testpost";
+            HttpStatusCode responseStatus = HttpStatusCode.OK;
+            string newResourceUri;
+            responseStatus = _requestHelper.Post("/", folder, out newResourceUri);
+            Assert.AreEqual(HttpStatusCode.Created, responseStatus);
+            responseStatus = _requestHelper.Get(newResourceUri);
+            Assert.AreEqual(HttpStatusCode.OK, responseStatus);
+            
+
+        }
+
+        [Test]
+        public void SimpleDeleteFolder()
+        {
+            var folder = "testpost";
+            HttpStatusCode responseStatus = HttpStatusCode.OK;
+            string newFolderUri;
+            responseStatus = _requestHelper.Post("/", folder, out newFolderUri);
+            Assert.AreEqual(HttpStatusCode.Created, responseStatus);
+
+            var newFileUri = Path.Combine(newFolderUri, "test.html");
+            responseStatus = _requestHelper.Put(newFileUri, "Haha");
+            Assert.AreEqual(HttpStatusCode.Created, responseStatus);
+            responseStatus = _requestHelper.Delete(newFolderUri);
+            Assert.AreEqual(HttpStatusCode.Conflict, responseStatus);
+            responseStatus = _requestHelper.Delete(newFileUri);
+            Assert.AreEqual(HttpStatusCode.NoContent, responseStatus);
+            responseStatus = _requestHelper.Delete(newFolderUri);
+            Assert.AreEqual(HttpStatusCode.NoContent, responseStatus);
+
+
+
         }
     }
 }

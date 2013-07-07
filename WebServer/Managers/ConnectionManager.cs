@@ -252,7 +252,7 @@ namespace WebServer.Managers
 
             var requestManager = _requestManagerFactory();
 
-            var response = requestManager.ProceesRequest(request, processExpectation : true);
+            var response = requestManager.ProceesRequest(request, processBody : false);
             if (response.StatusCode.IsSuccessCode())
             {
                 response = new Response() { StatusCode = HttpStatusCode.Continue };
@@ -329,6 +329,7 @@ namespace WebServer.Managers
         {
             byte[] bodyBytes=null;
            
+            // All HTTP/1.1 applications MUST be able to receive and decode the "chunked" transfer-coding, and MUST ignore chunk-extension extensions they do not understand. 
             if(_currentRequest.IsChunkedTransferEncoding)
             {
                 IList<byte[]> footers;

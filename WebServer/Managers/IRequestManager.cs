@@ -8,6 +8,6 @@ namespace WebServer.Managers
 {
     public interface IRequestManager
     {
-        Response ProceesRequest(Request request, bool processExpectation = false);
+        Response ProceesRequest(Request request, bool processBody = true);
     }
 }

@@ -17,12 +17,21 @@ namespace WebServer.ResourceHandlers
         bool GetVersioning(string resourceUri, out string lastUpdateDate, out string eTag);
 
         long GetResourceLength(string resourceUri, string contentType);
+        
+        // Used by GET
         byte[] GetResourceBytes(string resourceUri, string contentType);
         Stream GetResourceStream(string resourceUri, string contentType);
 
         IList<string> GetAvailableMediaTypes(string resourceUri, string method);
 
+        // Used by PUT
         bool CreateOrUpdateResource(string resourceUri, string contentType, byte[] content);
+        
+        // Used by DELETE
+        bool DeleteResource(string resourceUri);
+
+        // Used by POST - returns the uri of a new resoruces if it was created
+        string AlterResource(string resourceUri, string contentType, byte[] content);
         
 
     }

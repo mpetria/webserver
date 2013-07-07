@@ -22,11 +22,11 @@ namespace WebServer.Managers
         }
 
 
-        public Response ProceesRequest(Request request, bool processExpectation = false)
+        public Response ProceesRequest(Request request, bool processBody = true)
         {
             _logger.Log("Request", String.Format("Method: {0} Host: {1} UriPath: {2}", request.Method, request.Host, request.PathAndQuery));
 
-            var response = InnerProceesRequest(request, processExpectation);
+            var response = InnerProceesRequest(request, processBody);
 
             _logger.Log("Response", response.StatusCode.ToString());
 
@@ -34,7 +34,7 @@ namespace WebServer.Managers
         }
 
 
-        public Response InnerProceesRequest(Request request, bool processExpectation)
+        public Response InnerProceesRequest(Request request, bool processBody)
         {
             var response = new Response();
             bool returnResponse = false;
@@ -64,7 +64,7 @@ namespace WebServer.Managers
             if (returnResponse) return response;
 
 
-            if (!processExpectation) // do not process the body if processing an expectation
+            if (processBody) // do not process the body if processing an expectation
             {
                 returnResponse = ProcessBody(handler, request, response);
                 if (returnResponse) return response;
@@ -93,6 +93,35 @@ namespace WebServer.Managers
                 }
                 return true;
             }
+            else if(request.Method == HttpMethod.DELETE)
+            {
+                // A successful response SHOULD be 200 (OK) if the response includes an entity describing the status, 202 (Accepted) if the action has not yet been enacted, or 204 (No Content) if the action has been enacted but the response does not include an entity. 
+                var deleted = handler.DeleteResource(request.PathAndQuery);
+                if(deleted)
+                {
+                    response.StatusCode = HttpStatusCode.NoContent;
+                }
+                else
+                {
+                    response.StatusCode = HttpStatusCode.Conflict;
+                }
+                
+                return true;
+            }
+            else if(request.Method == HttpMethod.POST)
+            {
+                var createdResource = handler.AlterResource(request.PathAndQuery, request.GetHeaderValue(HttpHeader.ContentType), request.Body);
+                if (createdResource != null)
+                {
+                    response.StatusCode = HttpStatusCode.Created;
+                    response.Headers.Add(HttpHeader.ContentLocation, createdResource);
+                }
+                else
+                {
+                    response.StatusCode = HttpStatusCode.Conflict;
+                }
+                return true;
+            }
             return false;
         }
 
@@ -110,18 +139,20 @@ namespace WebServer.Managers
                 return true;
             }
 
-            if(!_serverConfig.IsSupportedMethod(request.Method))
+            if(!_serverConfig.IsSupportedMethod(request.Method)
+                || request.GetHeaderValue(HttpHeader.ContentRange) != null)
             {
                 response.StatusCode = HttpStatusCode.NotImplemented;
                 return true;
             }
+           
 
             return false;
         }
 
         public bool CheckIfResourceExits(IResourceHandler handler, Request request, Response response)
         {
-            if(request.Method == HttpMethod.HEAD || request.Method == HttpMethod.GET)
+            if (request.Method == HttpMethod.HEAD || request.Method == HttpMethod.GET || request.Method == HttpMethod.DELETE || request.Method == HttpMethod.POST)
             {
                 if (!handler.CheckIfExists(request.PathAndQuery))
                 {

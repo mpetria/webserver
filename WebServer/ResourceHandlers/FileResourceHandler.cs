@@ -30,7 +30,7 @@ namespace WebServer.ResourceHandlers
 
         override public IList<string> GetAllowedMethods(string resourceUri)
         {
-            return new List<string>() { HttpMethod.GET, HttpMethod.HEAD, HttpMethod.PUT };
+            return new List<string>() { HttpMethod.GET, HttpMethod.HEAD, HttpMethod.PUT, HttpMethod.DELETE };
         }
 
         override public IList<string> GetAllowedMediaTypes(string resourceUri, string method)
@@ -87,6 +87,15 @@ namespace WebServer.ResourceHandlers
             }
 
             return !alreadyExists;
+        }
+
+        override public bool DeleteResource(string resourceUri)
+        {
+            var filePath = GetPhysicalPath(resourceUri);
+            
+            File.Delete(filePath);
+
+            return true;
         }
        
     }

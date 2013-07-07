@@ -1,15 +1,18 @@
 ﻿Summary
-This is a file-based webserver that implements GET, HEAD, PUT methods on files and folders (PUT method is only allowed for files).
+This is a file-based webserver that implements GET, HEAD, PUT, DELETE, POST methods on files and folders.
 The implementation supports chunked transfer encodings, resource versioning based on last-modified-date, multiple hosts.
 
 Metohds on files:
 - GET (HEAD) on a file retrives the resource
 - PUT creates/updates the resource
+- POST is not allowed
+- DELETE - deletes the specified file
 
 Method on folders:
 - GET (HEAD) on a folder retrieves a html directory listing
 - PUT is not allowed 
-
+- POST - creates a new folder under the specified resource. Accepts the name of the new folder in the body of a text/plain request. It cleans the name of illegal characters and constructs an uniqu name returning the created resource uri in Content-Location header. 
+- DELETE - deletes the folder and 
 
 Main components
 - Server

@@ -25,7 +25,7 @@ namespace WebServer.ResourceHandlers
 
         override public IList<string> GetAllowedMethods(string resourceUri)
         {
-            return new List<string>(){ HttpMethod.GET, HttpMethod.HEAD };
+            return new List<string>(){ HttpMethod.GET, HttpMethod.HEAD, HttpMethod.POST, HttpMethod.DELETE };
         }
 
         private const string HtmlTemplate = 
@@ -65,6 +65,17 @@ namespace WebServer.ResourceHandlers
             return new List<string>() { "text/html" };
         }
 
+        public override IList<string> GetAllowedMediaTypes(string resourceUri, string method)
+        {
+            
+            if(method == HttpMethod.POST)
+            {
+                return new List<string>() { "text/plain" };
+            }
+            
+            return base.GetAllowedMediaTypes(resourceUri, method);
+        }
+
         override public bool GetVersioning(string resourceUri, out string lastUpdateDate, out string eTag)
         {
             eTag = null;
@@ -73,6 +84,51 @@ namespace WebServer.ResourceHandlers
             DateTime lastModifiedDate = File.GetLastWriteTimeUtc(physicalPath);
             lastUpdateDate = DateUtils.GetFormatedHttpDateFromUtcDate(lastModifiedDate);
             return true;
+        }
+
+        public override string AlterResource(string resourceUri, string contentType, byte[] content)
+        {
+            var physicalPath = GetPhysicalPath(resourceUri);
+            var newFolderName = new ASCIIEncoding().GetString(content);
+
+            newFolderName = CleanFileName(newFolderName);
+            newFolderName = newFolderName.SubstringBefore('.');
+            var newFolderPath = Path.Combine(physicalPath, newFolderName);
+            if(Directory.Exists(newFolderPath))
+            {
+                newFolderPath = String.Format("{0}_{1}", newFolderPath, Guid.NewGuid());
+            }
+
+            try
+            {
+                Directory.CreateDirectory(newFolderPath);
+            }
+            catch
+            {
+                newFolderPath = null;
+            }
+
+            return GetResourceUri(newFolderPath);
+        }
+
+        public override bool DeleteResource(string resourceUri)
+        {
+            var physicalPath = GetPhysicalPath(resourceUri);
+            try
+            {
+                Directory.Delete(physicalPath);
+            }
+            catch(Exception ex)
+            {
+                return false;
+            }
+            return true;
+
+        }
+
+        private static string CleanFileName(string fileName)
+        {
+            return Path.GetInvalidFileNameChars().Aggregate(fileName, (current, c) => current.Replace(c.ToString(), string.Empty));
         }
     }
 }

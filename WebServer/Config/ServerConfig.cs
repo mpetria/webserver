@@ -6,6 +6,7 @@ using System.Linq;
 using System.Net;
 using System.Reflection;
 using System.Text;
+using WebServer.Data;
 using WebServer.ResourceHandlers;
 using WebServer.Utils;
 
@@ -128,7 +129,7 @@ namespace WebServer.Config
 
         public bool IsSupportedMethod(string method)
         {
-            var supportedMetohds = new[] {"GET", "HEAD", "PUT"};
+            var supportedMetohds = new[] {HttpMethod.GET, HttpMethod.HEAD, HttpMethod.PUT, HttpMethod.DELETE, HttpMethod.POST};
             return supportedMetohds.Contains(method);
         }
 
